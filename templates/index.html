@@ -7,180 +7,276 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --pink:       #E91E8C;
+      --pink-dark:  #C2185B;
+      --pink-light: #FCE4EC;
+      --pink-mid:   #F8BBD0;
+      --bg:         #FFF5F9;
+      --card:       #FFFFFF;
+      --text:       #2D2D2D;
+      --text-sub:   #999;
+      --radius:     18px;
+      --shadow:     0 4px 20px rgba(233,30,140,0.08);
+    }
+
     body {
       font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-      background: #f0f2f5;
-      color: #1a1a2e;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
     }
 
+    /* ── 헤더 ────────────────────────────────────── */
     header {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      background: linear-gradient(135deg, var(--pink) 0%, #FF6BB3 100%);
       color: white;
-      padding: 20px 32px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+      padding: 22px 28px 28px;
+      position: relative;
+      overflow: hidden;
     }
-    header .logo { font-size: 26px; }
-    header h1   { font-size: 19px; font-weight: 700; }
-    header p    { font-size: 12px; opacity: 0.6; margin-top: 2px; }
-
-    .container { max-width: 1200px; margin: 28px auto; padding: 0 20px; }
-
-    /* 검색 카드 */
-    .search-card {
-      background: white;
+    header::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 50%;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; right: 60px;
+      width: 100px; height: 100px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 50%;
+    }
+    .header-inner { position: relative; z-index: 1; }
+    .header-logo {
+      width: 44px; height: 44px;
+      background: rgba(255,255,255,0.25);
       border-radius: 14px;
-      padding: 24px 28px;
-      box-shadow: 0 2px 14px rgba(0,0,0,0.07);
-      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      margin-bottom: 12px;
+    }
+    header h1   { font-size: 20px; font-weight: 800; }
+    header p    { font-size: 12px; opacity: 0.75; margin-top: 3px; }
+
+    /* ── 컨테이너 ──────────────────────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    /* ── 검색 카드 ─────────────────────────────────── */
+    .search-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
       overflow: visible;
     }
-    .search-card h2 { font-size: 14px; font-weight: 600; color: #666; margin-bottom: 14px; }
+    .search-card h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--pink);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
 
     .search-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    .field label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
-
+    /* 검색 입력 */
     .search-wrap { position: relative; flex: 1; min-width: 220px; }
     #searchInput {
       width: 100%;
-      padding: 10px 14px;
-      border: 2px solid #e0e0e0;
-      border-radius: 9px;
+      padding: 11px 16px;
+      border: 2px solid var(--pink-mid);
+      border-radius: 50px;
       font-size: 14px;
       outline: none;
-      transition: border-color 0.2s;
+      background: var(--bg);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      color: var(--text);
     }
-    #searchInput:focus { border-color: #0f3460; }
+    #searchInput:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 4px rgba(233,30,140,0.08);
+      background: white;
+    }
+    #searchInput::placeholder { color: #ccc; }
 
+    /* 드롭다운 */
     #dropdown {
       display: none;
       position: absolute;
-      top: calc(100% + 5px);
+      top: calc(100% + 8px);
       left: 0; right: 0;
       background: white;
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      border: 1.5px solid var(--pink-mid);
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(233,30,140,0.14);
       max-height: 260px;
       overflow-y: auto;
       z-index: 100;
     }
     .drop-item {
-      padding: 10px 14px;
+      padding: 11px 16px;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #f5f5f5;
-      transition: background 0.15s;
+      border-bottom: 1px solid #FFF0F6;
+      transition: background 0.12s;
     }
     .drop-item:last-child { border-bottom: none; }
-    .drop-item:hover { background: #f0f4ff; }
-    .drop-item .name { font-size: 14px; font-weight: 500; }
-    .drop-item .code { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
-    .drop-item .listed { color: #0f3460; background: #e8eeff; }
+    .drop-item:hover { background: var(--pink-light); }
+    .drop-item .name { font-size: 14px; font-weight: 600; }
+    .drop-item .code { font-size: 11px; color: #aaa; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
+    .drop-item .listed { color: var(--pink); background: var(--pink-light); }
 
+    /* 입력 필드 공통 */
     select, #yearInput {
-      padding: 10px 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 9px;
+      padding: 11px 14px;
+      border: 2px solid var(--pink-mid);
+      border-radius: 50px;
       font-size: 13px;
       outline: none;
-      background: white;
+      background: var(--bg);
       transition: border-color 0.2s;
       cursor: pointer;
+      color: var(--text);
     }
-    select:focus, #yearInput:focus { border-color: #0f3460; }
-    #yearInput { width: 90px; }
+    select:focus, #yearInput:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 4px rgba(233,30,140,0.08);
+    }
+    #yearInput { width: 95px; }
 
+    /* 버튼 */
     #addBtn {
-      padding: 10px 22px;
-      background: linear-gradient(135deg, #0f3460, #1a6bb5);
+      padding: 11px 26px;
+      background: linear-gradient(135deg, var(--pink), #FF6BB3);
       color: white;
       border: none;
-      border-radius: 9px;
+      border-radius: 50px;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
       white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(233,30,140,0.35);
     }
-    #addBtn:hover { opacity: 0.9; }
+    #addBtn:hover { opacity: 0.9; box-shadow: 0 6px 20px rgba(233,30,140,0.45); }
     #addBtn:active { transform: scale(0.97); }
-    #addBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+    #addBtn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
+    #allQBtn {
+      padding: 11px 18px;
+      background: white;
+      color: var(--pink);
+      border: 2px dashed var(--pink-mid);
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    #allQBtn:hover { background: var(--pink-light); border-color: var(--pink); }
+
+    /* 선택 배지 */
     #selectedBadge {
       display: none;
-      background: #e8eeff;
-      color: #0f3460;
-      padding: 5px 12px;
-      border-radius: 20px;
+      background: var(--pink-light);
+      color: var(--pink-dark);
+      padding: 6px 14px;
+      border-radius: 50px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       align-self: center;
     }
 
-    /* 로딩 인라인 */
+    /* 로딩 */
     #inlineLoading {
       display: none;
       align-self: center;
       font-size: 13px;
-      color: #888;
+      color: var(--pink);
+      gap: 6px;
     }
     .dot-spin {
       display: inline-block;
       width: 14px; height: 14px;
-      border: 2px solid #ccc;
-      border-top-color: #0f3460;
+      border: 2px solid var(--pink-mid);
+      border-top-color: var(--pink);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       vertical-align: middle;
-      margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* 오류 */
     #error {
       display: none;
-      background: #fff0f0;
-      border: 1px solid #ffcccc;
-      color: #c0392b;
+      background: #FFF0F6;
+      border: 1.5px solid var(--pink-mid);
+      color: var(--pink-dark);
       padding: 12px 18px;
-      border-radius: 9px;
-      margin-bottom: 16px;
+      border-radius: 14px;
+      margin-bottom: 14px;
       font-size: 13px;
     }
 
-    /* 결과 테이블 영역 */
+    /* ── 분기 버튼 ─────────────────────────────────── */
+    .quarter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .q-btn {
+      padding: 8px 14px;
+      border: 2px solid var(--pink-mid);
+      border-radius: 50px;
+      background: white;
+      font-size: 12px;
+      font-weight: 700;
+      color: #bbb;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .q-btn:hover  { border-color: var(--pink); color: var(--pink); }
+    .q-btn.active { border-color: var(--pink); background: var(--pink); color: white; box-shadow: 0 3px 10px rgba(233,30,140,0.3); }
+
+    /* ── 결과 영역 ─────────────────────────────────── */
     #resultArea { display: none; }
 
     .result-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
-    .result-header h2 { font-size: 16px; font-weight: 700; }
+    .result-header h2 { font-size: 16px; font-weight: 800; }
 
     .btn-group { display: flex; gap: 8px; }
 
     .btn-excel {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      display: flex; align-items: center; gap: 6px;
       padding: 9px 18px;
-      background: #217346;
+      background: linear-gradient(135deg, var(--pink), #FF6BB3);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 50px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
+      box-shadow: 0 3px 12px rgba(233,30,140,0.3);
       transition: opacity 0.2s;
     }
     .btn-excel:hover { opacity: 0.88; }
@@ -188,40 +284,42 @@
     .btn-clear {
       padding: 9px 16px;
       background: white;
-      color: #e74c3c;
-      border: 1.5px solid #e74c3c;
-      border-radius: 8px;
+      color: #bbb;
+      border: 2px solid #eee;
+      border-radius: 50px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-clear:hover { background: #fff0f0; }
+    .btn-clear:hover { border-color: var(--pink); color: var(--pink); }
 
-    /* 복사 완료 토스트 */
+    /* ── 토스트 ─────────────────────────────────────── */
     #toast {
       display: none;
       position: fixed;
-      bottom: 28px;
-      left: 50%;
+      bottom: 28px; left: 50%;
       transform: translateX(-50%);
-      background: #1a1a2e;
+      background: linear-gradient(135deg, var(--pink), #FF6BB3);
       color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
+      padding: 13px 26px;
+      border-radius: 50px;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       z-index: 999;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-      animation: fadeIn 0.2s ease;
+      box-shadow: 0 6px 24px rgba(233,30,140,0.4);
+      animation: fadeUp 0.25s ease;
     }
-    @keyframes fadeIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
 
-    /* 결과 테이블 */
+    /* ── 결과 테이블 ─────────────────────────────────── */
     .table-wrap {
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
       overflow: auto;
     }
 
@@ -232,187 +330,127 @@
       min-width: 700px;
     }
 
-    thead tr { background: #1a1a2e; color: white; }
+    thead tr {
+      background: linear-gradient(135deg, var(--pink), #FF6BB3);
+      color: white;
+    }
     thead th {
-      padding: 13px 18px;
+      padding: 14px 18px;
       text-align: right;
-      font-weight: 600;
+      font-weight: 700;
       font-size: 12px;
       letter-spacing: 0.3px;
       white-space: nowrap;
     }
     thead th:nth-child(1) { text-align: left; min-width: 130px; }
-    thead th:nth-child(2) { text-align: center; min-width: 70px; }
+    thead th:nth-child(2) { text-align: center; min-width: 80px; }
 
     tbody tr {
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid #FFF0F6;
       transition: background 0.12s;
     }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #fafbff; }
+    tbody tr:hover { background: var(--pink-light); }
 
     tbody td {
-      padding: 13px 18px;
+      padding: 14px 18px;
       text-align: right;
       font-size: 14px;
       white-space: nowrap;
     }
-    tbody td:nth-child(1) { text-align: left; font-weight: 600; }
-    tbody td:nth-child(2) { text-align: center; color: #888; font-size: 13px; }
+    tbody td:nth-child(1) { text-align: left; font-weight: 700; }
+    tbody td:nth-child(2) { text-align: center; color: #999; font-size: 13px; }
 
-    .neg   { color: #e74c3c; }
-    .pos   { color: #1a7a4a; }
-    .null  { color: #ccc; }
+    .neg  { color: #E74C3C; font-weight: 600; }
+    .pos  { color: #1A7A4A; font-weight: 600; }
+    .null { color: #ddd; }
 
     .margin-badge {
       display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
+      padding: 3px 10px;
+      border-radius: 50px;
       font-size: 12px;
       font-weight: 700;
     }
-    .margin-good { background: #e6f4ee; color: #1a7a4a; }
-    .margin-mid  { background: #fff8e1; color: #b07d00; }
-    .margin-bad  { background: #fff0f0; color: #e74c3c; }
-    .margin-null { background: #f5f5f5; color: #aaa; }
+    .margin-good { background: #E6F4EE; color: #1A7A4A; }
+    .margin-mid  { background: #FFF8E1; color: #B07D00; }
+    .margin-bad  { background: #FDECEA; color: #E74C3C; }
+    .margin-null { background: #F5F5F5; color: #bbb; }
 
     .del-btn {
-      background: none;
-      border: none;
-      color: #ccc;
-      cursor: pointer;
-      font-size: 16px;
-      padding: 0 4px;
-      transition: color 0.15s;
-      line-height: 1;
+      background: none; border: none;
+      color: #ddd; cursor: pointer;
+      font-size: 16px; padding: 0 4px;
+      transition: color 0.15s; line-height: 1;
     }
-    .del-btn:hover { color: #e74c3c; }
+    .del-btn:hover { color: var(--pink); }
 
     .hint {
       text-align: center;
-      color: #bbb;
+      color: #ddd;
       font-size: 13px;
-      padding: 40px;
+      padding: 50px;
     }
 
-    /* 분기 버튼 그룹 */
-    .quarter-group {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-    .q-btn {
-      padding: 7px 13px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      background: white;
-      font-size: 13px;
-      font-weight: 600;
-      color: #888;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .q-btn:hover  { border-color: #0f3460; color: #0f3460; }
-    .q-btn.active { border-color: #0f3460; background: #0f3460; color: white; }
-
-    #allQBtn {
-      padding: 10px 16px;
-      background: #f0f4ff;
-      color: #0f3460;
-      border: 2px dashed #b0c4f0;
-      border-radius: 9px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s;
-    }
-    #allQBtn:hover { background: #e0eaff; }
-
-    /* 기간 배지 */
+    /* ── 기간 배지 ─────────────────────────────────── */
     .period-badge {
       display: inline-block;
-      padding: 2px 7px;
-      border-radius: 10px;
+      padding: 2px 8px;
+      border-radius: 50px;
       font-size: 11px;
       font-weight: 700;
-      margin-left: 5px;
+      margin-left: 4px;
     }
-    .badge-q1  { background: #fff3e0; color: #e65100; }
-    .badge-q2  { background: #e8f5e9; color: #2e7d32; }
-    .badge-q3  { background: #e3f2fd; color: #1565c0; }
-    .badge-ann { background: #ede7f6; color: #4527a0; }
+    .badge-q1  { background: #FFF3E0; color: #E65100; }
+    .badge-q2  { background: #E8F5E9; color: #2E7D32; }
+    .badge-q3  { background: #E3F2FD; color: #1565C0; }
+    .badge-ann { background: var(--pink-light); color: var(--pink-dark); }
 
-    /* 서버 상태 배지 */
+    /* ── 서버 상태 배지 ────────────────────────────── */
     #serverStatus {
       position: fixed;
-      top: 12px; right: 16px;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
+      top: 12px; right: 14px;
+      font-size: 11px; font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 50px;
       z-index: 200;
-      opacity: 0.85;
     }
-    #serverStatus.ok   { background: #d4edda; color: #155724; }
-    #serverStatus.err  { background: #f8d7da; color: #721c24; }
-    #serverStatus.chk  { background: #fff3cd; color: #856404; }
+    #serverStatus.ok  { background: #E6F4EE; color: #1A7A4A; }
+    #serverStatus.err { background: #FDECEA; color: #E74C3C; }
+    #serverStatus.chk { background: #FFF8E1; color: #B07D00; }
 
-    /* ── 모바일 반응형 ──────────────────────────────── */
+    /* ── 모바일 ────────────────────────────────────── */
     @media (max-width: 640px) {
-      header { padding: 14px 16px; gap: 10px; }
-      header .logo { font-size: 22px; }
-      header h1    { font-size: 16px; }
-      header p     { font-size: 11px; }
+      header { padding: 18px 16px 22px; }
+      header h1 { font-size: 17px; }
 
-      .container { margin: 14px auto; padding: 0 12px; }
-
-      .search-card { padding: 16px; }
-      .search-card h2 { margin-bottom: 12px; }
-
+      .container { padding: 14px 12px 40px; }
+      .search-card { padding: 18px 14px; }
       .search-row { flex-direction: column; gap: 12px; }
-
       .field { width: 100%; }
       .search-wrap { min-width: unset; }
-      #searchInput { font-size: 16px; /* iOS zoom 방지 */ }
-
+      #searchInput { font-size: 16px; }
       .quarter-group { gap: 6px; }
       .q-btn { flex: 1; text-align: center; padding: 9px 6px; font-size: 12px; }
-
       select, #yearInput { font-size: 16px; width: 100%; }
       #yearInput { width: 100%; }
-
-      #addBtn {
-        width: 100%;
-        padding: 13px;
-        font-size: 15px;
-      }
-      #allQBtn {
-        width: 100%;
-        padding: 11px;
-        font-size: 13px;
-      }
-
+      #addBtn  { width: 100%; padding: 14px; font-size: 15px; }
+      #allQBtn { width: 100%; padding: 12px; }
       #selectedBadge { width: 100%; text-align: center; }
 
-      .result-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-      }
+      .result-header { flex-direction: column; align-items: flex-start; gap: 10px; }
       .btn-group { width: 100%; }
       .btn-excel, .btn-clear { flex: 1; justify-content: center; }
 
-      /* 테이블: 카드형으로 전환 */
+      /* 카드형 테이블 */
       #resultTable thead { display: none; }
       #resultTable tbody tr {
         display: block;
         background: white;
-        border-radius: 10px;
+        border-radius: 16px;
         margin-bottom: 10px;
-        padding: 12px 14px;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        padding: 14px 16px;
+        box-shadow: 0 2px 12px rgba(233,30,140,0.07);
         border-bottom: none;
       }
       #resultTable tbody td {
@@ -420,38 +458,27 @@
         justify-content: space-between;
         align-items: center;
         text-align: right;
-        padding: 5px 0;
+        padding: 6px 0;
         font-size: 13px;
-        border-bottom: 1px solid #f5f5f5;
+        border-bottom: 1px solid #FFF0F6;
         white-space: normal;
       }
       #resultTable tbody td:last-child { border-bottom: none; }
       #resultTable tbody td::before {
         content: attr(data-label);
-        font-size: 11px;
-        color: #999;
-        font-weight: 700;
-        text-align: left;
-        flex-shrink: 0;
-        margin-right: 8px;
+        font-size: 11px; color: #bbb;
+        font-weight: 700; text-align: left;
+        flex-shrink: 0; margin-right: 8px;
       }
       #resultTable tbody td:nth-child(1) {
-        font-size: 14px;
-        font-weight: 700;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 8px;
-        margin-bottom: 4px;
+        font-size: 14px; font-weight: 800;
+        border-bottom: 2px solid var(--pink-light);
+        padding-bottom: 10px; margin-bottom: 4px;
       }
       #resultTable tbody td:nth-child(8) { justify-content: flex-end; }
-
-      .table-wrap {
-        background: transparent;
-        box-shadow: none;
-        overflow: visible;
-      }
+      .table-wrap { background: transparent; box-shadow: none; overflow: visible; }
       #resultTable { min-width: unset; }
-
-      .hint { padding: 28px 16px; }
+      .hint { padding: 30px 16px; }
     }
   </style>
 </head>
@@ -460,8 +487,8 @@
 <div id="serverStatus" class="chk">확인 중...</div>
 
 <header>
-  <div class="logo">📊</div>
-  <div>
+  <div class="header-inner">
+    <div class="header-logo">📊</div>
     <h1>DART 재무제표 조회</h1>
     <p>금융감독원 전자공시시스템 Open API</p>
   </div>
@@ -509,7 +536,7 @@
 
       <button id="addBtn" onclick="addRow()">조회</button>
       <button id="allQBtn" onclick="addAllQuarters()" title="선택 연도의 Q1~연간 전체 추가">전체분기 추가</button>
-      <div id="inlineLoading"><span class="dot-spin"></span>조회 중...</div>
+      <div id="inlineLoading"><span class="dot-spin"></span> 조회 중...</div>
     </div>
   </div>
 
@@ -621,7 +648,6 @@
 
   // ── 행 추가 ────────────────────────────────────────
   async function addRow() {
-    // 선택 안 됐으면 드롭다운 첫 번째 항목 자동 선택
     if (!selectedCorp) {
       const first = document.querySelector('.drop-item');
       if (first) { first.click(); await new Promise(r => setTimeout(r, 50)); }
@@ -721,11 +747,11 @@
     }
 
     area.style.display = 'block';
-    document.getElementById('resultTitle').textContent = `조회 결과 (${rows.length}개 기업)`;
+    document.getElementById('resultTitle').textContent = `조회 결과 (${rows.length}개)`;
 
     tbody.innerHTML = rows.map((r, i) => `
       <tr>
-        <td>${r.corp_name}<span style="font-size:11px;color:#aaa;font-weight:400;margin-left:4px;">${r.fs_label}</span></td>
+        <td>${r.corp_name}<span style="font-size:11px;color:#ccc;font-weight:400;margin-left:5px;">${r.fs_label}</span></td>
         <td data-label="연도" style="text-align:center">
           ${r.year}
           <span class="period-badge ${r.q_badge}">${r.q_label}</span>
@@ -768,41 +794,21 @@
   // ── Excel 복사 ─────────────────────────────────────
   function copyToExcel() {
     if (!rows.length) return;
-
     const headers = ['기업명', '재무제표', '연도', '분기', '매출액(억원)', '영업이익(억원)', '영업이익률(%)', '자본총계(억원)', '자산총계(억원)'];
     const dataRows = rows.map(r => [
-      r.corp_name,
-      r.fs_label,
-      r.year,
-      r.q_label,
-      fmtNum(r.매출액),
-      fmtNum(r.영업이익),
+      r.corp_name, r.fs_label, r.year, r.q_label,
+      r.매출액 ?? '', r.영업이익 ?? '',
       r.영업이익률 !== null ? r.영업이익률 : '',
-      fmtNum(r.자본총계),
-      fmtNum(r.자산총계),
+      r.자본총계 ?? '', r.자산총계 ?? '',
     ]);
-
     const tsv = [headers, ...dataRows].map(row => row.join('\t')).join('\n');
-
-    navigator.clipboard.writeText(tsv).then(() => {
-      showToast();
-    }).catch(() => {
-      // fallback
+    navigator.clipboard.writeText(tsv).then(showToast).catch(() => {
       const ta = document.createElement('textarea');
-      ta.value = tsv;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+      ta.value = tsv; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
       showToast();
     });
-  }
-
-  function fmtNum(v) {
-    if (v === null || v === undefined) return '';
-    return v;
   }
 
   function showToast() {
@@ -814,17 +820,15 @@
   // ── 유틸 ──────────────────────────────────────────
   function setLoading(v) {
     document.getElementById('inlineLoading').style.display = v ? 'flex' : 'none';
-    document.getElementById('addBtn').disabled    = v;
-    document.getElementById('allQBtn').disabled   = v;
+    document.getElementById('addBtn').disabled  = v;
+    document.getElementById('allQBtn').disabled = v;
   }
   function showError(msg) {
     const el = document.getElementById('error');
     el.textContent = '⚠️ ' + msg;
     el.style.display = 'block';
   }
-  function hideError() {
-    document.getElementById('error').style.display = 'none';
-  }
+  function hideError() { document.getElementById('error').style.display = 'none'; }
 
   document.getElementById('searchInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -840,19 +844,18 @@
     }
   });
 
-  // ── 연도 입력 검증 ─────────────────────────────────
   document.getElementById('yearInput').addEventListener('change', function () {
     const v = parseInt(this.value, 10);
     if (isNaN(v) || v < 2000 || v > 2030) {
-      this.style.borderColor = '#e74c3c';
-      showError(`연도는 2000~2030 사이여야 합니다.`);
+      this.style.borderColor = '#E74C3C';
+      showError('연도는 2000~2030 사이여야 합니다.');
     } else {
       this.style.borderColor = '';
       hideError();
     }
   });
 
-  // ── 서버 헬스체크 (페이지 로드 시) ────────────────
+  // ── 서버 헬스체크 ──────────────────────────────────
   async function checkHealth() {
     const el = document.getElementById('serverStatus');
     try {

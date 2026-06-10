@@ -63,7 +63,7 @@ def load_corp_list() -> list[dict]:
         log.info("기업 목록 다운로드 중...")
         try:
             res = requests.get("https://opendart.fss.or.kr/api/corpCode.xml",
-                               params={"crtfc_key": API_KEY}, timeout=30)
+                               params={"crtfc_key": API_KEY}, timeout=120)
             res.raise_for_status()
         except requests.RequestException as e:
             raise RuntimeError(f"기업 목록 다운로드 실패: {e}")
@@ -92,11 +92,21 @@ def load_corp_list() -> list[dict]:
     return _corp_list
 
 
+_corp_load_error: str | None = None
+
 def _preload_corp_list():
-    try:
-        load_corp_list()
-    except Exception as e:
-        log.error("기업 목록 사전 로드 실패: %s", e)
+    """성공할 때까지 백그라운드에서 재시도 (최대 30회, 20초 간격)."""
+    global _corp_load_error
+    for attempt in range(1, 31):
+        try:
+            load_corp_list()
+            _corp_load_error = None
+            return
+        except Exception as e:
+            _corp_load_error = str(e)
+            log.error("기업 목록 로드 실패 (시도 %d/30): %s", attempt, e)
+            time.sleep(20)
+    log.error("기업 목록 로드 최종 실패")
 
 threading.Thread(target=_preload_corp_list, daemon=True).start()
 
@@ -618,7 +628,8 @@ def _yf_val(df, col, keys):
 @app.route("/api/health")
 def health():
     return jsonify({"status": "ok", "api_key_valid": _api_key_valid,
-                    "corp_list_loaded": len(_corp_list)})
+                    "corp_list_loaded": len(_corp_list),
+                    "corp_load_error": _corp_load_error})
 
 
 @app.route("/")
@@ -631,13 +642,13 @@ def search():
     keyword = request.args.get("q", "").strip()
     if not keyword:
         return jsonify([])
-    if not _corp_list and _corp_lock.locked():
-        # 시작 직후 목록 로딩 중 — 요청을 잡고 있지 말고 바로 안내
-        return jsonify({"error": "기업 목록을 불러오는 중입니다. 10초 후 다시 검색해 주세요."}), 503
-    try:
-        corps = load_corp_list()
-    except RuntimeError as e:
-        return jsonify({"error": str(e)}), 500
+    if not _corp_list:
+        # 다운로드는 백그라운드 스레드 전담 — 요청을 잡고 있으면 워커 타임아웃으로 죽음
+        msg = "기업 목록을 불러오는 중입니다. 10초 후 다시 검색해 주세요."
+        if _corp_load_error:
+            msg += f" (마지막 오류: {_corp_load_error})"
+        return jsonify({"error": msg}), 503
+    corps = _corp_list
     results = [c for c in corps if keyword.lower() in c["corp_name"].lower()]
     results.sort(key=lambda x: x["stock_code"] == "")
     return jsonify(results[:30])

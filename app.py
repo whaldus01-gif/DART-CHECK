@@ -38,9 +38,14 @@ def validate_api_key() -> tuple[bool, str]:
 
 _api_key_valid, _api_key_msg = validate_api_key()
 if not _api_key_valid:
-    log.error("API 키 오류: %s", _api_key_msg)
-    sys.exit(1)
-log.info("API 키 확인 완료")
+    # 키 자체가 없거나 형식이 틀린 경우만 종료. 네트워크 일시 오류로 서버가 죽으면 안 됨.
+    if "DART_API_KEY" in _api_key_msg or "길이 오류" in _api_key_msg or "인증 실패" in _api_key_msg:
+        log.error("API 키 오류: %s", _api_key_msg)
+        sys.exit(1)
+    log.warning("API 키 검증 보류 (네트워크 오류, 서버는 계속 기동): %s", _api_key_msg)
+    _api_key_valid = True  # 일시적 네트워크 문제로 간주
+else:
+    log.info("API 키 확인 완료")
 
 _corp_list: list[dict] = []
 _corp_index: dict[str, dict] = {}

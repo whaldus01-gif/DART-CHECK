@@ -229,12 +229,30 @@ def financial():
                     return r["thstrm_amount"]
         return None
 
+    def is_pure_loss_account(name: str) -> bool:
+        # "영업손실", "당기순손실" 같은 순수 손실 계정 → True (부호 반전 필요)
+        # "영업이익(손실)", "영업손익" 같은 IFRS 복합명 → False (이미 부호 포함)
+        return "손실" in name and "손익" not in name and "(손실)" not in name
+
     def find_by_name(names: list, sections: tuple) -> float | None:
-        for sj in sections:
-            for name in names:
+        # 이름 우선순위를 지키면서 탐색 (name-first, section-second)
+        for name in names:
+            for sj in sections:
                 for r in tables.get(sj, []):
                     if r["account_nm"] == name:
                         return r["thstrm_amount"]
+        return None
+
+    def find_by_name_with_sign(names: list, sections: tuple) -> float | None:
+        # 부호 보정 포함 버전: 순수 손실 계정명이면 값을 반전
+        for name in names:
+            for sj in sections:
+                for r in tables.get(sj, []):
+                    if r["account_nm"] == name:
+                        v = r["thstrm_amount"]
+                        if v is not None and is_pure_loss_account(name):
+                            return -v
+                        return v
         return None
 
     def find_metric(account_id: str, name_variants: list, sections: tuple) -> float | None:
@@ -242,11 +260,6 @@ def financial():
         if val is None:
             val = find_by_name(name_variants, sections)
         return val
-
-    def is_pure_loss_account(name: str) -> bool:
-        # "영업손실", "당기순손실" 같은 순수 손실 계정만 True
-        # "영업이익(손실)", "영업손익" 같은 표준 IFRS 복합명은 False
-        return "손실" in name and "손익" not in name and "(손실)" not in name
 
     def find_op_income() -> float | None:
         for sj in ("IS", "CIS"):
@@ -256,7 +269,10 @@ def financial():
                     if v is not None and is_pure_loss_account(r["account_nm"]):
                         return -v
                     return v
-        return find_by_name(["영업이익", "영업손익", "영업이익(손실)", "영업손실"], ("IS", "CIS"))
+        # 폴백: 계정명 검색 (부호 보정 포함)
+        return find_by_name_with_sign(
+            ["영업이익", "영업손익", "영업이익(손실)", "영업손실"], ("IS", "CIS")
+        )
 
     def find_net_income() -> float | None:
         target_ids = {
@@ -270,7 +286,11 @@ def financial():
                     if v is not None and is_pure_loss_account(r["account_nm"]):
                         return -v
                     return v
-        return find_by_name(["당기순이익", "분기순이익", "당기순손익", "당기순이익(손실)"], ("IS", "CIS"))
+        # 폴백: 계정명 검색 (부호 보정 포함, 당기순손실 포함)
+        return find_by_name_with_sign(
+            ["당기순이익", "분기순이익", "당기순손익", "당기순이익(손실)", "당기순손실", "분기순손실"],
+            ("IS", "CIS")
+        )
 
     summary = {
         "자산총계":        find_metric("ifrs-full_Assets",      ["자산총계"],                                   ("BS",)),

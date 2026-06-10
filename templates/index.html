@@ -683,7 +683,7 @@
       }
 
       const s = data.summary;
-      const margin = (s['매출액'] && s['영업이익'] !== null)
+      const margin = (s['매출액'] && s['매출액'] !== 0 && s['영업이익'] !== null && s['영업이익'] !== undefined)
         ? +(s['영업이익'] / s['매출액'] * 100).toFixed(1) : null;
 
       rows.push({

@@ -4,205 +4,214 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DART 재무제표 조회</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --pink:       #E91E8C;
-      --pink-dark:  #C2185B;
-      --pink-light: #FCE4EC;
-      --pink-mid:   #F8BBD0;
-      --bg:         #F4F6F9;
-      --card:       #FFFFFF;
-      --text:       #2D2D2D;
-      --text-sub:   #999;
-      --radius:     18px;
-      --shadow:     0 2px 14px rgba(0,0,0,0.06);
+      --blue:      #0ea5e9;
+      --blue-dark: #0284c7;
+      --blue-bg:   #f0f9ff;
+      --blue-mid:  #bae6fd;
+      --bg:        #f8fafc;
+      --card:      #ffffff;
+      --border:    #e2e8f0;
+      --text:      #0f172a;
+      --text-sub:  #94a3b8;
+      --text-mid:  #64748b;
+      --radius:    12px;
+      --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
     }
 
     body {
-      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      font-family: 'Inter', 'Noto Sans KR', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      font-size: 14px;
     }
 
-    /* ── 헤더 ────────────────────────────────────── */
+    /* ── 헤더 ──────────────────────────────────── */
     header {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
-      color: white;
-      padding: 22px 28px 28px;
-      position: relative;
-      overflow: hidden;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
     }
-    header::before {
-      content: '';
-      position: absolute;
-      top: -40px; right: -40px;
-      width: 160px; height: 160px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 50%;
-    }
-    header::after {
-      content: '';
-      position: absolute;
-      bottom: -30px; right: 60px;
-      width: 100px; height: 100px;
-      background: rgba(233,30,140,0.15);
-      border-radius: 50%;
-    }
-    .header-inner { position: relative; z-index: 1; }
     .header-logo {
-      width: 44px; height: 44px;
-      background: rgba(255,255,255,0.25);
-      border-radius: 14px;
+      width: 36px; height: 36px;
+      background: var(--blue);
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px;
-      margin-bottom: 12px;
+      font-size: 18px;
+      flex-shrink: 0;
     }
-    header h1   { font-size: 20px; font-weight: 800; }
-    header p    { font-size: 12px; opacity: 0.75; margin-top: 3px; }
+    .header-text h1   { font-size: 15px; font-weight: 700; color: var(--text); }
+    .header-text p    { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+    .header-divider   { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
 
-    /* ── 컨테이너 ──────────────────────────────────── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px 40px; }
+    /* ── 컨테이너 ─────────────────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
 
-    /* ── 검색 카드 ─────────────────────────────────── */
+    /* ── 섹션 타이틀 ──────────────────────────── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-bottom: 10px;
+    }
+
+    /* ── 검색 카드 ────────────────────────────── */
     .search-card {
       background: var(--card);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 22px 20px;
+      padding: 20px;
       box-shadow: var(--shadow);
       margin-bottom: 16px;
       overflow: visible;
     }
-    .search-card h2 {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--pink);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 16px;
-    }
 
     .search-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
-    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
     .field label {
       font-size: 11px;
-      font-weight: 700;
-      color: var(--text-sub);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-weight: 600;
+      color: var(--text-mid);
+      letter-spacing: 0.3px;
     }
 
     /* 검색 입력 */
     .search-wrap { position: relative; flex: 1; min-width: 220px; }
     #searchInput {
       width: 100%;
-      padding: 11px 16px;
-      border: 2px solid var(--pink-mid);
-      border-radius: 50px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 14px;
+      font-family: inherit;
       outline: none;
       background: var(--bg);
-      transition: border-color 0.2s, box-shadow 0.2s;
       color: var(--text);
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     #searchInput:focus {
-      border-color: var(--pink);
-      box-shadow: 0 0 0 4px rgba(233,30,140,0.08);
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
       background: white;
     }
-    #searchInput::placeholder { color: #ccc; }
+    #searchInput::placeholder { color: #cbd5e1; }
 
     /* 드롭다운 */
     #dropdown {
       display: none;
       position: absolute;
-      top: calc(100% + 8px);
+      top: calc(100% + 6px);
       left: 0; right: 0;
       background: white;
-      border: 1.5px solid var(--pink-mid);
-      border-radius: 16px;
-      box-shadow: 0 12px 32px rgba(233,30,140,0.14);
-      max-height: 260px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md), 0 0 0 1px rgba(0,0,0,0.04);
+      max-height: 280px;
       overflow-y: auto;
       z-index: 100;
     }
     .drop-item {
-      padding: 11px 16px;
+      padding: 10px 14px;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #FFF0F6;
-      transition: background 0.12s;
+      border-bottom: 1px solid #f8fafc;
+      transition: background 0.1s;
     }
     .drop-item:last-child { border-bottom: none; }
-    .drop-item:hover { background: var(--pink-light); }
-    .drop-item .name { font-size: 14px; font-weight: 600; }
-    .drop-item .code { font-size: 11px; color: #aaa; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
-    .drop-item .listed { color: var(--pink); background: var(--pink-light); }
+    .drop-item:hover { background: var(--bg); }
+    .drop-item .name { font-size: 14px; font-weight: 500; color: var(--text); }
+    .drop-item .code { font-size: 11px; color: var(--text-sub); background: var(--bg); padding: 2px 8px; border-radius: 6px; }
+    .drop-item .listed { color: var(--blue-dark); background: var(--blue-bg); }
 
-    /* 입력 필드 공통 */
+    /* 입력 공통 */
     select, #yearInput {
-      padding: 11px 14px;
-      border: 2px solid var(--pink-mid);
-      border-radius: 50px;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 13px;
+      font-family: inherit;
       outline: none;
       background: var(--bg);
-      transition: border-color 0.2s;
-      cursor: pointer;
       color: var(--text);
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath fill='%2394a3b8' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
     }
     select:focus, #yearInput:focus {
-      border-color: var(--pink);
-      box-shadow: 0 0 0 4px rgba(233,30,140,0.08);
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
+      background: white;
     }
-    #yearInput { width: 95px; }
+    #yearInput { width: 90px; }
 
     /* 버튼 */
     #addBtn {
-      padding: 11px 26px;
-      background: linear-gradient(135deg, var(--pink), #FF6BB3);
+      padding: 9px 20px;
+      background: var(--blue);
       color: white;
       border: none;
-      border-radius: 50px;
+      border-radius: 8px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
       white-space: nowrap;
-      box-shadow: 0 4px 14px rgba(233,30,140,0.35);
     }
-    #addBtn:hover { opacity: 0.9; box-shadow: 0 6px 20px rgba(233,30,140,0.45); }
-    #addBtn:active { transform: scale(0.97); }
-    #addBtn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+    #addBtn:hover { background: var(--blue-dark); box-shadow: 0 2px 8px rgba(14,165,233,0.35); }
+    #addBtn:active { transform: scale(0.98); }
+    #addBtn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
     #allQBtn {
-      padding: 11px 18px;
+      padding: 9px 16px;
       background: white;
-      color: var(--pink);
-      border: 2px dashed var(--pink-mid);
-      border-radius: 50px;
+      color: var(--blue);
+      border: 1px solid var(--blue-mid);
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.15s;
     }
-    #allQBtn:hover { background: var(--pink-light); border-color: var(--pink); }
+    #allQBtn:hover { background: var(--blue-bg); border-color: var(--blue); }
 
     /* 선택 배지 */
     #selectedBadge {
       display: none;
-      background: var(--pink-light);
-      color: var(--pink-dark);
-      padding: 6px 14px;
-      border-radius: 50px;
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      padding: 5px 12px;
+      border-radius: 6px;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
       align-self: center;
+      border: 1px solid var(--blue-mid);
     }
 
     /* 로딩 */
@@ -210,273 +219,261 @@
       display: none;
       align-self: center;
       font-size: 13px;
-      color: var(--pink);
+      color: var(--text-sub);
+      align-items: center;
       gap: 6px;
     }
     .dot-spin {
-      display: inline-block;
       width: 14px; height: 14px;
-      border: 2px solid var(--pink-mid);
-      border-top-color: var(--pink);
+      border: 2px solid var(--border);
+      border-top-color: var(--blue);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
-      vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* 오류 */
     #error {
       display: none;
-      background: #FFF0F6;
-      border: 1.5px solid var(--pink-mid);
-      color: var(--pink-dark);
-      padding: 12px 18px;
-      border-radius: 14px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #c2410c;
+      padding: 11px 16px;
+      border-radius: 8px;
       margin-bottom: 14px;
       font-size: 13px;
     }
 
-    /* ── 분기 버튼 ─────────────────────────────────── */
-    .quarter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    /* ── 분기 버튼 ────────────────────────────── */
+    .quarter-group { display: flex; gap: 5px; flex-wrap: wrap; }
     .q-btn {
-      padding: 8px 14px;
-      border: 2px solid var(--pink-mid);
-      border-radius: 50px;
+      padding: 7px 13px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
       background: white;
       font-size: 12px;
-      font-weight: 700;
-      color: #bbb;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-mid);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.12s;
       white-space: nowrap;
     }
-    .q-btn:hover  { border-color: var(--pink); color: var(--pink); }
-    .q-btn.active { border-color: var(--pink); background: var(--pink); color: white; box-shadow: 0 3px 10px rgba(233,30,140,0.3); }
+    .q-btn:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+    .q-btn.active { border-color: var(--blue); background: var(--blue); color: white; }
 
-    /* ── 결과 영역 ─────────────────────────────────── */
+    /* ── 결과 ─────────────────────────────────── */
     #resultArea { display: none; }
 
     .result-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
-    .result-header h2 { font-size: 16px; font-weight: 800; }
+    .result-header h2 { font-size: 15px; font-weight: 700; }
+    .result-count {
+      font-size: 12px;
+      color: var(--text-sub);
+      font-weight: 500;
+      margin-left: 6px;
+    }
 
     .btn-group { display: flex; gap: 8px; }
 
     .btn-excel {
       display: flex; align-items: center; gap: 6px;
-      padding: 9px 18px;
-      background: linear-gradient(135deg, var(--pink), #FF6BB3);
+      padding: 8px 16px;
+      background: #16a34a;
       color: white;
       border: none;
-      border-radius: 50px;
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      box-shadow: 0 3px 12px rgba(233,30,140,0.3);
-      transition: opacity 0.2s;
+      transition: background 0.15s;
     }
-    .btn-excel:hover { opacity: 0.88; }
+    .btn-excel:hover { background: #15803d; }
 
     .btn-clear {
-      padding: 9px 16px;
+      padding: 8px 14px;
       background: white;
-      color: #bbb;
-      border: 2px solid #eee;
-      border-radius: 50px;
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
     }
-    .btn-clear:hover { border-color: var(--pink); color: var(--pink); }
+    .btn-clear:hover { border-color: #fca5a5; color: #dc2626; background: #fff5f5; }
 
-    /* ── 토스트 ─────────────────────────────────────── */
+    /* ── 토스트 ──────────────────────────────── */
     #toast {
       display: none;
       position: fixed;
-      bottom: 28px; left: 50%;
+      bottom: 24px; left: 50%;
       transform: translateX(-50%);
-      background: linear-gradient(135deg, var(--pink), #FF6BB3);
+      background: #0f172a;
       color: white;
-      padding: 13px 26px;
-      border-radius: 50px;
-      font-size: 14px;
-      font-weight: 600;
+      padding: 11px 22px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
       z-index: 999;
-      box-shadow: 0 6px 24px rgba(233,30,140,0.4);
-      animation: fadeUp 0.25s ease;
+      box-shadow: var(--shadow-md);
+      animation: fadeUp 0.2s ease;
+      white-space: nowrap;
     }
     @keyframes fadeUp {
-      from { opacity:0; transform: translateX(-50%) translateY(10px); }
+      from { opacity:0; transform: translateX(-50%) translateY(8px); }
       to   { opacity:1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* ── 결과 테이블 ─────────────────────────────────── */
+    /* ── 테이블 ──────────────────────────────── */
     .table-wrap {
       background: white;
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: auto;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      min-width: 700px;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
 
-    thead tr {
-      background: linear-gradient(135deg, #1a1a2e, #0f3460);
-      color: white;
-    }
+    thead tr { background: #f8fafc; border-bottom: 1px solid var(--border); }
     thead th {
-      padding: 14px 18px;
+      padding: 11px 16px;
       text-align: right;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 0.3px;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--text-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
       white-space: nowrap;
     }
-    thead th:nth-child(1) { text-align: left; min-width: 130px; }
-    thead th:nth-child(2) { text-align: center; min-width: 80px; }
+    thead th:nth-child(1) { text-align: left; }
+    thead th:nth-child(2) { text-align: center; }
 
-    tbody tr {
-      border-bottom: 1px solid #FFF0F6;
-      transition: background 0.12s;
-    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--pink-light); }
+    tbody tr:hover { background: #f8fafc; }
 
     tbody td {
-      padding: 14px 18px;
+      padding: 13px 16px;
       text-align: right;
-      font-size: 14px;
+      font-size: 13px;
       white-space: nowrap;
     }
-    tbody td:nth-child(1) { text-align: left; font-weight: 700; }
-    tbody td:nth-child(2) { text-align: center; color: #999; font-size: 13px; }
+    tbody td:nth-child(1) { text-align: left; font-weight: 600; color: var(--text); }
+    tbody td:nth-child(2) { text-align: center; }
 
-    .neg  { color: #E74C3C; font-weight: 600; }
-    .pos  { color: #1A7A4A; font-weight: 600; }
-    .null { color: #ddd; }
+    .neg  { color: #dc2626; font-weight: 600; }
+    .pos  { color: #16a34a; font-weight: 600; }
+    .null { color: #cbd5e1; }
 
     .margin-badge {
       display: inline-block;
-      padding: 3px 10px;
-      border-radius: 50px;
+      padding: 3px 8px;
+      border-radius: 6px;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
     }
-    .margin-good { background: #E6F4EE; color: #1A7A4A; }
-    .margin-mid  { background: #FFF8E1; color: #B07D00; }
-    .margin-bad  { background: #FDECEA; color: #E74C3C; }
-    .margin-null { background: #F5F5F5; color: #bbb; }
+    .margin-good { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .margin-mid  { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .margin-bad  { background: #fff5f5; color: #dc2626; border: 1px solid #fecaca; }
+    .margin-null { background: #f8fafc; color: #cbd5e1; border: 1px solid #f1f5f9; }
 
     .del-btn {
       background: none; border: none;
-      color: #ddd; cursor: pointer;
-      font-size: 16px; padding: 0 4px;
-      transition: color 0.15s; line-height: 1;
+      color: #cbd5e1; cursor: pointer;
+      font-size: 14px; padding: 2px 4px;
+      border-radius: 4px;
+      transition: all 0.12s; line-height: 1;
     }
-    .del-btn:hover { color: var(--pink); }
+    .del-btn:hover { color: #dc2626; background: #fff5f5; }
 
-    .hint {
-      text-align: center;
-      color: #ddd;
-      font-size: 13px;
-      padding: 50px;
-    }
+    .hint { text-align: center; color: #cbd5e1; font-size: 13px; padding: 48px; }
 
-    /* ── 기간 배지 ─────────────────────────────────── */
+    /* ── 기간 배지 ───────────────────────────── */
     .period-badge {
       display: inline-block;
-      padding: 2px 8px;
-      border-radius: 50px;
-      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 10px;
       font-weight: 700;
       margin-left: 4px;
+      letter-spacing: 0.2px;
     }
-    .badge-q1  { background: #FFF3E0; color: #E65100; }
-    .badge-q2  { background: #E8F5E9; color: #2E7D32; }
-    .badge-q3  { background: #E3F2FD; color: #1565C0; }
-    .badge-ann { background: var(--pink-light); color: var(--pink-dark); }
+    .badge-q1  { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+    .badge-q2  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-q3  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .badge-ann { background: var(--blue-bg); color: var(--blue-dark); border: 1px solid var(--blue-mid); }
 
-    /* ── 서버 상태 배지 ────────────────────────────── */
+    /* ── 서버 상태 ───────────────────────────── */
     #serverStatus {
-      position: fixed;
-      top: 12px; right: 14px;
-      font-size: 11px; font-weight: 700;
-      padding: 5px 12px;
-      border-radius: 50px;
-      z-index: 200;
+      position: fixed; top: 12px; right: 14px;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px; z-index: 200;
+      border: 1px solid transparent;
     }
-    #serverStatus.ok  { background: #E6F4EE; color: #1A7A4A; }
-    #serverStatus.err { background: #FDECEA; color: #E74C3C; }
-    #serverStatus.chk { background: #FFF8E1; color: #B07D00; }
+    #serverStatus.ok  { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+    #serverStatus.err { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
+    #serverStatus.chk { background: #fffbeb; color: #d97706; border-color: #fde68a; }
 
-    /* ── 모바일 ────────────────────────────────────── */
+    /* ── 모바일 ──────────────────────────────── */
     @media (max-width: 640px) {
-      header { padding: 18px 16px 22px; }
-      header h1 { font-size: 17px; }
-
+      header { padding: 0 14px; }
       .container { padding: 14px 12px 40px; }
-      .search-card { padding: 18px 14px; }
+      .search-card { padding: 16px 14px; }
       .search-row { flex-direction: column; gap: 12px; }
       .field { width: 100%; }
       .search-wrap { min-width: unset; }
       #searchInput { font-size: 16px; }
       .quarter-group { gap: 6px; }
-      .q-btn { flex: 1; text-align: center; padding: 9px 6px; font-size: 12px; }
+      .q-btn { flex: 1; text-align: center; font-size: 12px; }
       select, #yearInput { font-size: 16px; width: 100%; }
       #yearInput { width: 100%; }
-      #addBtn  { width: 100%; padding: 14px; font-size: 15px; }
-      #allQBtn { width: 100%; padding: 12px; }
+      #addBtn  { width: 100%; padding: 12px; font-size: 15px; }
+      #allQBtn { width: 100%; padding: 10px; }
       #selectedBadge { width: 100%; text-align: center; }
 
       .result-header { flex-direction: column; align-items: flex-start; gap: 10px; }
       .btn-group { width: 100%; }
       .btn-excel, .btn-clear { flex: 1; justify-content: center; }
 
-      /* 카드형 테이블 */
       #resultTable thead { display: none; }
       #resultTable tbody tr {
         display: block;
         background: white;
-        border-radius: 16px;
+        border-radius: 10px;
         margin-bottom: 10px;
         padding: 14px 16px;
-        box-shadow: 0 2px 12px rgba(233,30,140,0.07);
+        box-shadow: var(--shadow);
         border-bottom: none;
+        border: 1px solid var(--border);
       }
       #resultTable tbody td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        text-align: right;
-        padding: 6px 0;
-        font-size: 13px;
-        border-bottom: 1px solid #FFF0F6;
-        white-space: normal;
+        display: flex; justify-content: space-between; align-items: center;
+        text-align: right; padding: 6px 0; font-size: 13px;
+        border-bottom: 1px solid #f8fafc; white-space: normal;
       }
       #resultTable tbody td:last-child { border-bottom: none; }
       #resultTable tbody td::before {
         content: attr(data-label);
-        font-size: 11px; color: #bbb;
-        font-weight: 700; text-align: left;
+        font-size: 11px; color: var(--text-sub);
+        font-weight: 600; text-align: left;
         flex-shrink: 0; margin-right: 8px;
       }
       #resultTable tbody td:nth-child(1) {
-        font-size: 14px; font-weight: 800;
-        border-bottom: 2px solid var(--pink-light);
+        font-size: 14px; font-weight: 700;
+        border-bottom: 1px solid var(--border);
         padding-bottom: 10px; margin-bottom: 4px;
       }
       #resultTable tbody td:nth-child(8) { justify-content: flex-end; }
-      .table-wrap { background: transparent; box-shadow: none; overflow: visible; }
+      .table-wrap { background: transparent; box-shadow: none; overflow: visible; border: none; }
       #resultTable { min-width: unset; }
       .hint { padding: 30px 16px; }
     }
@@ -487,8 +484,8 @@
 <div id="serverStatus" class="chk">확인 중...</div>
 
 <header>
-  <div class="header-inner">
-    <div class="header-logo">🏦</div>
+  <div class="header-logo">🏦</div>
+  <div class="header-text">
     <h1>DART 재무제표 조회</h1>
     <p>금융감독원 전자공시시스템 Open API</p>
   </div>
@@ -496,15 +493,15 @@
 
 <div class="container">
 
-  <!-- 검색 카드 -->
+  <div class="section-label">기업 검색</div>
+
   <div class="search-card">
-    <h2>기업 추가</h2>
     <div class="search-row">
 
       <div class="field" style="flex:1; min-width:200px;">
         <label>회사명</label>
         <div class="search-wrap">
-          <input id="searchInput" type="text" placeholder="예) 삼성전자, LG디스플레이..." autocomplete="off" />
+          <input id="searchInput" type="text" placeholder="삼성전자, SK하이닉스..." autocomplete="off" />
           <div id="dropdown"></div>
         </div>
       </div>
@@ -517,10 +514,10 @@
       </div>
 
       <div class="field">
-        <label>분기 선택</label>
+        <label>분기</label>
         <div class="quarter-group">
           <button class="q-btn" data-code="11013" onclick="selectQ(this)">Q1</button>
-          <button class="q-btn" data-code="11012" onclick="selectQ(this)">Q2 (반기)</button>
+          <button class="q-btn" data-code="11012" onclick="selectQ(this)">Q2</button>
           <button class="q-btn" data-code="11014" onclick="selectQ(this)">Q3</button>
           <button class="q-btn active" data-code="11011" onclick="selectQ(this)">연간</button>
         </div>
@@ -535,22 +532,18 @@
       </div>
 
       <button id="addBtn" onclick="addRow()">조회</button>
-      <button id="allQBtn" onclick="addAllQuarters()" title="선택 연도의 Q1~연간 전체 추가">전체분기 추가</button>
+      <button id="allQBtn" onclick="addAllQuarters()">전체분기</button>
       <div id="inlineLoading"><span class="dot-spin"></span> 조회 중...</div>
     </div>
   </div>
 
-  <!-- 오류 -->
   <div id="error"></div>
 
-  <!-- 결과 -->
   <div id="resultArea">
     <div class="result-header">
-      <h2 id="resultTitle">조회 결과</h2>
+      <h2>조회 결과 <span class="result-count" id="resultCount"></span></h2>
       <div class="btn-group">
-        <button class="btn-excel" onclick="copyToExcel()">
-          <span>📋</span> Excel 복사
-        </button>
+        <button class="btn-excel" onclick="copyToExcel()">📋 Excel 복사</button>
         <button class="btn-clear" onclick="clearAll()">전체 삭제</button>
       </div>
     </div>
@@ -563,14 +556,14 @@
             <th>연도</th>
             <th>매출액 (억원)</th>
             <th>영업이익 (억원)</th>
-            <th>영업이익률 (%)</th>
+            <th>영업이익률</th>
             <th>자본총계 (억원)</th>
             <th>자산총계 (억원)</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="resultBody">
-          <tr><td class="hint" colspan="8">위에서 기업을 검색해 추가하세요</td></tr>
+          <tr><td class="hint" colspan="8">기업을 검색해 조회하세요</td></tr>
         </tbody>
       </table>
     </div>
@@ -578,8 +571,7 @@
 
 </div>
 
-<!-- 토스트 -->
-<div id="toast">✅ 클립보드에 복사됐습니다. Excel에서 붙여넣기(Ctrl+V) 하세요!</div>
+<div id="toast">✅ 클립보드에 복사됐습니다. Excel에서 Ctrl+V 하세요!</div>
 
 <script>
   let selectedCorp = null;
@@ -596,13 +588,11 @@
   function getActiveQ() {
     return document.querySelector('.q-btn.active')?.dataset.code || '11011';
   }
-
   function selectQ(btn) {
     document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
 
-  // ── 검색 자동완성 ──────────────────────────────────
   document.getElementById('searchInput').addEventListener('input', function () {
     clearTimeout(debounceTimer);
     selectedCorp = null;
@@ -633,9 +623,7 @@
     dd.style.display = 'block';
   }
 
-  function closeDropdown() {
-    document.getElementById('dropdown').style.display = 'none';
-  }
+  function closeDropdown() { document.getElementById('dropdown').style.display = 'none'; }
 
   function selectCorp(corp) {
     selectedCorp = corp;
@@ -646,7 +634,6 @@
     badge.style.display = 'inline-block';
   }
 
-  // ── 행 추가 ────────────────────────────────────────
   async function addRow() {
     if (!selectedCorp) {
       const first = document.querySelector('.drop-item');
@@ -671,8 +658,7 @@
     if (!selectedCorp) { alert('회사를 먼저 선택하세요.'); return; }
     const year  = document.getElementById('yearInput').value;
     const fsDiv = document.getElementById('fsSelect').value;
-    hideError();
-    setLoading(true);
+    hideError(); setLoading(true);
     for (const code of ['11013', '11012', '11014', '11011']) {
       await fetchAndPush(selectedCorp, year, code, fsDiv, true);
     }
@@ -685,7 +671,6 @@
   async function fetchAndPush(corp, year, reportCode, fsDiv, silent = false) {
     const fsLabel = document.getElementById('fsSelect').selectedOptions[0].text;
     const qInfo   = QUARTER_MAP[reportCode];
-
     const dup = rows.find(r =>
       r.corp_code === corp.corp_code && r.year === year &&
       r.report_code === reportCode   && r.fs_div === fsDiv
@@ -694,38 +679,24 @@
       if (!silent) showError(`${corp.corp_name} ${year} ${qInfo.label}(${fsLabel})은 이미 추가됐습니다.`);
       return false;
     }
-
     const params = new URLSearchParams({
       corp_code: corp.corp_code, corp_name: corp.corp_name,
       year, report_code: reportCode, fs_div: fsDiv,
     });
-
     try {
       const res  = await fetch(`/api/financial?${params}`);
       const data = await res.json();
-      if (!res.ok) {
-        if (!silent) showError(data.error || '조회 실패');
-        return false;
-      }
-
+      if (!res.ok) { if (!silent) showError(data.error || '조회 실패'); return false; }
       const s = data.summary;
       const margin = (s['매출액'] && s['매출액'] !== 0 && s['영업이익'] !== null && s['영업이익'] !== undefined)
         ? +(s['영업이익'] / s['매출액'] * 100).toFixed(1) : null;
-
       rows.push({
-        corp_code: corp.corp_code,
-        corp_name: data.corp_name,
-        year,
-        report_code: reportCode,
-        q_label:  qInfo.label,
-        q_badge:  qInfo.badge,
-        fs_div:   fsDiv,
-        fs_label: fsLabel,
-        매출액:    s['매출액'],
-        영업이익:  s['영업이익'],
-        영업이익률: margin,
-        자본총계:  s['자본총계'],
-        자산총계:  s['자산총계'],
+        corp_code: corp.corp_code, corp_name: data.corp_name,
+        year, report_code: reportCode,
+        q_label: qInfo.label, q_badge: qInfo.badge,
+        fs_div: fsDiv, fs_label: fsLabel,
+        매출액: s['매출액'], 영업이익: s['영업이익'],
+        영업이익률: margin, 자본총계: s['자본총계'], 자산총계: s['자산총계'],
       });
       renderTable();
       return true;
@@ -735,32 +706,31 @@
     }
   }
 
-  // ── 테이블 렌더 ────────────────────────────────────
   function renderTable() {
     const area  = document.getElementById('resultArea');
     const tbody = document.getElementById('resultBody');
-
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td class="hint" colspan="8">위에서 기업을 검색해 추가하세요</td></tr>';
+      tbody.innerHTML = '<tr><td class="hint" colspan="8">기업을 검색해 조회하세요</td></tr>';
       area.style.display = 'none';
       return;
     }
-
     area.style.display = 'block';
-    document.getElementById('resultTitle').textContent = `조회 결과 (${rows.length}개)`;
-
+    document.getElementById('resultCount').textContent = `${rows.length}개`;
     tbody.innerHTML = rows.map((r, i) => `
       <tr>
-        <td>${r.corp_name}<span style="font-size:11px;color:#ccc;font-weight:400;margin-left:5px;">${r.fs_label}</span></td>
-        <td data-label="연도" style="text-align:center">
-          ${r.year}
+        <td>
+          ${r.corp_name}
+          <span style="font-size:11px;color:var(--text-sub);font-weight:400;margin-left:4px;">${r.fs_label}</span>
+        </td>
+        <td data-label="연도" style="text-align:center;">
+          <span style="font-weight:600;">${r.year}</span>
           <span class="period-badge ${r.q_badge}">${r.q_label}</span>
         </td>
-        ${fmtTd(r.매출액,    '매출액(억원)')}
-        ${fmtTd(r.영업이익,  '영업이익(억원)')}
-        <td data-label="영업이익률" style="text-align:center">${marginBadge(r.영업이익률)}</td>
-        ${fmtTd(r.자본총계,  '자본총계(억원)')}
-        ${fmtTd(r.자산총계,  '자산총계(억원)')}
+        ${fmtTd(r.매출액,   '매출액(억원)')}
+        ${fmtTd(r.영업이익, '영업이익(억원)')}
+        <td data-label="영업이익률" style="text-align:center;">${marginBadge(r.영업이익률)}</td>
+        ${fmtTd(r.자본총계, '자본총계(억원)')}
+        ${fmtTd(r.자산총계, '자산총계(억원)')}
         <td><button class="del-btn" onclick="deleteRow(${i})" title="삭제">✕</button></td>
       </tr>`).join('');
   }
@@ -779,22 +749,17 @@
     return `<span class="margin-badge ${cls}">${v > 0 ? '+' : ''}${v}%</span>`;
   }
 
-  function deleteRow(i) {
-    rows.splice(i, 1);
-    renderTable();
-  }
+  function deleteRow(i) { rows.splice(i, 1); renderTable(); }
 
   function clearAll() {
     if (!rows.length) return;
     if (!confirm('전체 삭제하시겠습니까?')) return;
-    rows = [];
-    renderTable();
+    rows = []; renderTable();
   }
 
-  // ── Excel 복사 ─────────────────────────────────────
   function copyToExcel() {
     if (!rows.length) return;
-    const headers = ['기업명', '재무제표', '연도', '분기', '매출액(억원)', '영업이익(억원)', '영업이익률(%)', '자본총계(억원)', '자산총계(억원)'];
+    const headers = ['기업명','재무제표','연도','분기','매출액(억원)','영업이익(억원)','영업이익률(%)','자본총계(억원)','자산총계(억원)'];
     const dataRows = rows.map(r => [
       r.corp_name, r.fs_label, r.year, r.q_label,
       r.매출액 ?? '', r.영업이익 ?? '',
@@ -817,7 +782,6 @@
     setTimeout(() => { t.style.display = 'none'; }, 3000);
   }
 
-  // ── 유틸 ──────────────────────────────────────────
   function setLoading(v) {
     document.getElementById('inlineLoading').style.display = v ? 'flex' : 'none';
     document.getElementById('addBtn').disabled  = v;
@@ -847,7 +811,7 @@
   document.getElementById('yearInput').addEventListener('change', function () {
     const v = parseInt(this.value, 10);
     if (isNaN(v) || v < 2000 || v > 2030) {
-      this.style.borderColor = '#E74C3C';
+      this.style.borderColor = '#fca5a5';
       showError('연도는 2000~2030 사이여야 합니다.');
     } else {
       this.style.borderColor = '';
@@ -855,7 +819,6 @@
     }
   });
 
-  // ── 서버 헬스체크 ──────────────────────────────────
   async function checkHealth() {
     const el = document.getElementById('serverStatus');
     try {
@@ -863,15 +826,13 @@
       const data = await res.json();
       if (data.status === 'ok') {
         el.className = 'ok';
-        el.textContent = '● 서버 정상';
+        el.textContent = '● 정상';
         setTimeout(() => { el.style.display = 'none'; }, 4000);
       } else {
-        el.className = 'err';
-        el.textContent = '● 서버 오류';
+        el.className = 'err'; el.textContent = '● 서버 오류';
       }
     } catch (e) {
-      el.className = 'err';
-      el.textContent = '● 서버 연결 안됨';
+      el.className = 'err'; el.textContent = '● 연결 안됨';
     }
   }
   checkHealth();

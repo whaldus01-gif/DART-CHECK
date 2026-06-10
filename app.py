@@ -326,11 +326,17 @@ def search_overseas():
     if not keyword:
         return jsonify([])
     try:
-        import yfinance as yf
-        s = yf.Search(keyword, max_results=20)
+        res = requests.get(
+            "https://query1.finance.yahoo.com/v1/finance/search",
+            params={"q": keyword, "quotesCount": 15, "newsCount": 0, "enableFuzzyQuery": True},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=5,
+        )
+        res.raise_for_status()
+        quotes = res.json().get("quotes", [])
         results = []
-        for q in (s.quotes or []):
-            if q.get("quoteType") not in ("EQUITY",):
+        for q in quotes:
+            if q.get("quoteType") not in ("EQUITY", "ETF"):
                 continue
             results.append({
                 "ticker":   q.get("symbol", ""),

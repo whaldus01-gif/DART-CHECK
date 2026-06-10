@@ -795,7 +795,7 @@
     document.getElementById('overseasBadge').style.display = 'none';
     const q = this.value.trim();
     if (!q) { closeDropdown('overseasDropdown'); return; }
-    overseasDebounce = setTimeout(() => fetchOverseasSearch(q), 250);
+    overseasDebounce = setTimeout(() => fetchOverseasSearch(q), 150);
   });
 
   async function fetchOverseasSearch(q) {

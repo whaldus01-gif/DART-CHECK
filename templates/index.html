@@ -799,17 +799,24 @@
   });
 
   async function fetchOverseasSearch(q) {
+    // 로딩 중 표시
+    const dd = document.getElementById('overseasDropdown');
+    dd.innerHTML = '<div class="drop-item" style="color:var(--text-sub);justify-content:center;">검색 중...</div>';
+    dd.style.display = 'block';
     try {
       const res  = await fetch(`/api/search_overseas?q=${encodeURIComponent(q)}`);
       const list = await res.json();
-      if (list.error) return;
-      const mapped = list.map(item => ({
-        ...item,
-        corp_name: item.name,
-        stock_code: '',
-      }));
-      renderOverseasDropdown(mapped);
-    } catch(e) {}
+      if (!res.ok || list.error) {
+        dd.style.display = 'none';
+        showError('해외 검색 오류: ' + (list.error || res.status));
+        return;
+      }
+      if (!list.length) { dd.style.display = 'none'; return; }
+      renderOverseasDropdown(list);
+    } catch(e) {
+      dd.style.display = 'none';
+      showError('해외 검색 연결 오류: ' + e.message);
+    }
   }
 
   function renderOverseasDropdown(list) {

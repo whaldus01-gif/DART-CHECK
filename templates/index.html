@@ -517,7 +517,7 @@
         <label>분기</label>
         <div class="quarter-group">
           <button class="q-btn" data-code="11013" onclick="selectQ(this)">Q1</button>
-          <button class="q-btn" data-code="11012" onclick="selectQ(this)">Q2</button>
+          <button class="q-btn" data-code="Q2" onclick="selectQ(this)">Q2</button>
           <button class="q-btn" data-code="11014" onclick="selectQ(this)">Q3</button>
           <button class="q-btn active" data-code="11011" onclick="selectQ(this)">연간</button>
         </div>
@@ -580,7 +580,7 @@
 
   const QUARTER_MAP = {
     '11013': { label: 'Q1',      badge: 'badge-q1'  },
-    '11012': { label: 'Q2',      badge: 'badge-q2'  },
+    'Q2':    { label: 'Q2',      badge: 'badge-q2'  },
     '11014': { label: 'Q3',      badge: 'badge-q3'  },
     '11011': { label: '연간',    badge: 'badge-ann' },
   };

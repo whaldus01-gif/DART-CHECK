@@ -648,11 +648,15 @@ def _yf_val(df, col, keys):
 
 
 # ── 라우트 ─────────────────────────────────────────────────
+APP_VERSION = "v6-bundled-corplist"
+
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok", "api_key_valid": _api_key_valid,
+    return jsonify({"status": "ok", "version": APP_VERSION,
+                    "api_key_valid": _api_key_valid,
                     "corp_list_loaded": len(_corp_list),
-                    "corp_load_error": _corp_load_error})
+                    "corp_load_error": _corp_load_error,
+                    "corp_file_exists": CORP_FILE.exists()})
 
 
 @app.route("/")

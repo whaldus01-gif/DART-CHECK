@@ -478,6 +478,52 @@
       font-weight: 400;
     }
 
+    /* ── SDB 양식 ────────────────────────────── */
+    .sdb-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .sdb-title {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .sdb-sub { font-size: 11px; color: var(--text-sub); font-weight: 500; }
+    .sdb-grid { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .sdb-block { flex: 1; min-width: 320px; }
+    .sdb-block-title {
+      font-size: 12px; font-weight: 700; color: var(--text-mid);
+      margin-bottom: 6px; display: flex; justify-content: space-between;
+    }
+    .sdb-unit { font-weight: 500; color: var(--text-sub); font-size: 11px; }
+    table.sdb-table {
+      width: 100%; border-collapse: collapse; font-size: 12px; min-width: unset;
+      border: 1px solid var(--border);
+    }
+    .sdb-table th, .sdb-table td {
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .sdb-table th { background: #f8fafc; font-weight: 600; color: var(--text-mid); text-align: center; }
+    .sdb-table td.grp  { background: #f8fafc; font-weight: 600; text-align: center; color: var(--text-mid); font-size: 11px; }
+    .sdb-table td.item { text-align: left; font-weight: 500; }
+    .sdb-table td.item.indent { padding-left: 22px; font-weight: 400; color: var(--text-mid); }
+    .sdb-table td.neg { color: #dc2626; }
+    .sdb-loading { color: var(--text-sub); font-size: 13px; padding: 8px 0; }
+    .sdb-err { color: #c2410c; font-size: 13px; }
+
+    @media (max-width: 640px) {
+      .sdb-grid { flex-direction: column; }
+      .sdb-block { min-width: unset; width: 100%; }
+      .sdb-card { padding: 14px; overflow-x: auto; }
+    }
+
     /* ── 서버 상태 ───────────────────────────── */
     #serverStatus {
       position: fixed; top: 12px; right: 14px;
@@ -559,10 +605,11 @@
 
 <div class="container">
 
-  <!-- 국내/해외 탭 -->
+  <!-- 국내/해외/SDB 탭 -->
   <div class="mode-tabs">
     <button class="mode-tab active" onclick="switchMode('domestic')">🇰🇷 국내</button>
     <button class="mode-tab" onclick="switchMode('overseas')">🌐 해외</button>
+    <button class="mode-tab" onclick="switchMode('sdb')">📄 SDB 양식</button>
   </div>
 
   <!-- ── 국내 검색 카드 ── -->
@@ -650,6 +697,17 @@
 
   <div id="error"></div>
 
+  <!-- ── SDB 양식 영역 ── -->
+  <div id="sdbArea" style="display:none;">
+    <div class="result-header">
+      <h2>SDB 양식 <span class="result-count" id="sdbCount"></span></h2>
+      <div class="btn-group">
+        <button class="btn-excel" onclick="copySdbExcel()">📋 Excel 복사</button>
+      </div>
+    </div>
+    <div id="sdbBlocks"></div>
+  </div>
+
   <div id="resultArea">
     <div class="result-header">
       <h2>조회 결과 <span class="result-count" id="resultCount"></span>
@@ -711,14 +769,18 @@
   };
 
   // ── 모드 전환 ─────────────────────────────────
+  const MODE_ORDER = ['domestic', 'overseas', 'sdb'];
   function switchMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.mode-tab').forEach((t, i) => {
-      t.classList.toggle('active', (mode === 'domestic') === (i === 0));
+      t.classList.toggle('active', MODE_ORDER[i] === mode);
     });
     document.getElementById('domesticCard').style.display = mode === 'domestic' ? '' : 'none';
     document.getElementById('overseasCard').style.display = mode === 'overseas' ? '' : 'none';
+    document.getElementById('sdbArea').style.display      = mode === 'sdb' ? '' : 'none';
+    document.getElementById('resultArea').style.display   = (mode !== 'sdb' && rows.length) ? 'block' : 'none';
     hideError();
+    if (mode === 'sdb') renderSdb();
   }
 
   // ── 국내 분기 선택 ────────────────────────────
@@ -1090,6 +1152,163 @@
       r.자본총계 ?? '', r.자산총계 ?? '',
     ]);
     const tsv = [headers, ...dataRows].map(row => row.join('\t')).join('\n');
+    navigator.clipboard.writeText(tsv).then(showToast).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = tsv; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast();
+    });
+  }
+
+  // ── SDB 양식 ──────────────────────────────────
+  const sdbCache = {};
+  const SDB_LEFT_ROWS = [
+    { grp: '매출 / 손익',     span: 4, item: '매출액' },
+    { item: '매출원가' },
+    { item: '매출총이익' },
+    { item: '영업이익' },
+    { grp: '요약 재무상태표', span: 8, item: '자산총계' },
+    { item: '유동자산',   indent: true },
+    { item: '비유동자산', indent: true },
+    { item: '부채총계' },
+    { item: '유동부채',   indent: true },
+    { item: '비유동부채', indent: true },
+    { item: '자본총계' },
+    { item: '차입금',     indent: true },
+  ];
+
+  function sdbCompanies() {
+    const seen = new Set(), comps = [];
+    for (const r of rows) {
+      const key = r.type === 'overseas' ? `o:${r.ticker}` : `d:${r.corp_code}:${r.fs_div}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      comps.push({ key, ...r });
+    }
+    return comps;
+  }
+
+  async function getSdbData(c) {
+    if (sdbCache[c.key]) return sdbCache[c.key];
+    try {
+      const url = c.type === 'overseas'
+        ? `/api/sdb_overseas?ticker=${encodeURIComponent(c.ticker)}&corp_name=${encodeURIComponent(c.corp_name)}`
+        : `/api/sdb?corp_code=${c.corp_code}&corp_name=${encodeURIComponent(c.corp_name)}&fs_div=${c.fs_div}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || ('조회 실패 ' + res.status) };
+      sdbCache[c.key] = data;
+      return data;
+    } catch(e) {
+      return { error: e.message };
+    }
+  }
+
+  function sdbFmt(v) {
+    if (v === null || v === undefined) return '—';
+    return v < 0
+      ? `<span class="neg">(${Math.abs(v).toLocaleString('ko-KR')})</span>`
+      : v.toLocaleString('ko-KR');
+  }
+
+  function sdbBlockHtml(d) {
+    const yearKeys = Object.keys(d.years).sort();
+    const yl = y => y.slice(2) + '년';
+
+    const leftHead = `<tr><th colspan="2">구분</th>${yearKeys.map(y => `<th>${yl(y)}</th>`).join('')}</tr>`;
+    const leftBody = SDB_LEFT_ROWS.map(row => {
+      const grpCell = row.grp ? `<td class="grp" rowspan="${row.span}">${row.grp}</td>` : '';
+      const cells = yearKeys.map(y => `<td>${sdbFmt(d.years[y]?.[row.item])}</td>`).join('');
+      return `<tr>${grpCell}<td class="item ${row.indent ? 'indent' : ''}">${row.item}</td>${cells}</tr>`;
+    }).join('');
+
+    const QS = ['1Q', '2Q', '3Q', '4Q'];
+    const rev = d.quarters['매출액'] || {};
+    const op  = d.quarters['영업이익'] || {};
+    const ratio = q => {
+      const r = rev[q], o = op[q];
+      if (!r || o === null || o === undefined) return '—';
+      return (o / r * 100).toFixed(1) + '%';
+    };
+    const rightBody = `
+      <tr><td class="item">매출액</td>${QS.map(q => `<td>${sdbFmt(rev[q])}</td>`).join('')}</tr>
+      <tr><td class="item">영업이익</td>${QS.map(q => `<td>${sdbFmt(op[q])}</td>`).join('')}</tr>
+      <tr><td class="item">영업이익률</td>${QS.map(q => `<td>${ratio(q)}</td>`).join('')}</tr>`;
+
+    const fxNote = d.overseas ? `<span class="sdb-sub">환율 ${d.exchange_rate?.toLocaleString('ko-KR')} KRW/USD</span>` : '';
+    const tickerBadge = d.overseas ? `<span class="overseas-badge">🌐 ${d.ticker}</span>` : '';
+
+    return `
+      <div class="sdb-title">${d.corp_name}${tickerBadge}
+        <span class="sdb-sub">(${d.fs_label})</span>${fxNote}
+      </div>
+      <div class="sdb-grid">
+        <div class="sdb-block">
+          <div class="sdb-block-title"><span>최근 3개년 재무지표</span><span class="sdb-unit">(KRW : 백만)</span></div>
+          <table class="sdb-table"><thead>${leftHead}</thead><tbody>${leftBody}</tbody></table>
+        </div>
+        <div class="sdb-block">
+          <div class="sdb-block-title"><span>당해년도 분기 경영실적 (${String(d.quarter_year).slice(2)}년)</span><span class="sdb-unit">(KRW : 백만)</span></div>
+          <table class="sdb-table">
+            <thead><tr><th>구분</th><th>1Q</th><th>2Q</th><th>3Q</th><th>4Q</th></tr></thead>
+            <tbody>${rightBody}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  async function renderSdb() {
+    const container = document.getElementById('sdbBlocks');
+    const comps = sdbCompanies();
+    document.getElementById('sdbCount').textContent = comps.length ? `${comps.length}개 기업` : '';
+    if (!comps.length) {
+      container.innerHTML = '<div class="hint">국내/해외 탭에서 기업을 먼저 조회하면 SDB 양식으로 정리됩니다</div>';
+      return;
+    }
+    container.innerHTML = comps.map((c, i) =>
+      `<div class="sdb-card" id="sdb-block-${i}"><div class="sdb-loading">⏳ ${c.corp_name} 데이터 조회 중...</div></div>`).join('');
+    for (let i = 0; i < comps.length; i++) {
+      const data = await getSdbData(comps[i]);
+      const el = document.getElementById(`sdb-block-${i}`);
+      if (!el) continue;
+      el.innerHTML = data.error
+        ? `<div class="sdb-err">⚠️ ${comps[i].corp_name}: ${data.error}</div>`
+        : sdbBlockHtml(data);
+    }
+  }
+
+  function copySdbExcel() {
+    const comps = sdbCompanies();
+    if (!comps.length) { showError('복사할 기업이 없습니다. 먼저 기업을 조회해 주세요.'); return; }
+    const lines = [];
+    const tsvVal = v => (v === null || v === undefined) ? '' : v;
+    for (const c of comps) {
+      const d = sdbCache[c.key];
+      if (!d) continue;
+      const yearKeys = Object.keys(d.years).sort();
+      lines.push(`${d.corp_name}${d.overseas ? ` (${d.ticker})` : ''}\t(${d.fs_label})\t(KRW : 백만)`);
+      lines.push(`[최근 3개년 재무지표]`);
+      lines.push(`구분\t항목\t${yearKeys.map(y => y.slice(2) + '년').join('\t')}`);
+      for (const row of SDB_LEFT_ROWS) {
+        const grp = row.grp || '';
+        const vals = yearKeys.map(y => tsvVal(d.years[y]?.[row.item])).join('\t');
+        lines.push(`${grp}\t${row.indent ? '  ' : ''}${row.item}\t${vals}`);
+      }
+      const QS = ['1Q', '2Q', '3Q', '4Q'];
+      const rev = d.quarters['매출액'] || {}, op = d.quarters['영업이익'] || {};
+      lines.push(`[당해년도 분기 경영실적 (${String(d.quarter_year).slice(2)}년)]`);
+      lines.push(`구분\t1Q\t2Q\t3Q\t4Q`);
+      lines.push(`매출액\t${QS.map(q => tsvVal(rev[q])).join('\t')}`);
+      lines.push(`영업이익\t${QS.map(q => tsvVal(op[q])).join('\t')}`);
+      lines.push(`영업이익률\t${QS.map(q => {
+        const r = rev[q], o = op[q];
+        return (!r || o === null || o === undefined) ? '' : (o / r * 100).toFixed(1) + '%';
+      }).join('\t')}`);
+      lines.push('');
+    }
+    if (!lines.length) { showError('데이터 로딩이 끝난 후 복사해 주세요.'); return; }
+    const tsv = lines.join('\n');
     navigator.clipboard.writeText(tsv).then(showToast).catch(() => {
       const ta = document.createElement('textarea');
       ta.value = tsv; ta.style.cssText = 'position:fixed;opacity:0';

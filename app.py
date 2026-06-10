@@ -10,6 +10,7 @@ import sys
 import logging
 import threading
 import time
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
@@ -274,6 +275,310 @@ def _sub(a, b):
     if a is not None and b is not None:
         return round(a - b, 1)
     return a if a is not None else b
+
+
+# ── SDB 양식 데이터 ────────────────────────────────────────
+BORROW_IDS = {
+    "ifrs-full_ShorttermBorrowings", "ifrs-full_LongtermBorrowings",
+    "ifrs-full_BondsIssued", "dart_ShortTermBorrowings",
+    "dart_LongTermBorrowingsGross", "ifrs-full_CurrentPortionOfLongtermBorrowings",
+}
+BORROW_NAMES = {
+    "단기차입금", "장기차입금", "사채", "유동성장기차입금",
+    "유동성장기부채", "유동성사채", "단기사채",
+}
+
+
+def _parse_won(val):
+    """원 단위 정수로 파싱 (SDB는 백만 단위라 억원 반올림으론 정밀도 부족)."""
+    if val is None:
+        return None
+    val = str(val).strip().replace(",", "")
+    if not val or val in ("-", "N/A"):
+        return None
+    try:
+        return int(float(val))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _fetch_tables_raw(corp_code, year, report_code, fs_div):
+    """DART 호출 후 원 단위 금액의 섹션별 행 반환. 실패/데이터 없음 시 None."""
+    try:
+        res = requests.get(
+            "https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json",
+            params={"crtfc_key": API_KEY, "corp_code": corp_code,
+                    "bsns_year": year, "reprt_code": report_code, "fs_div": fs_div},
+            timeout=30,
+        )
+        res.raise_for_status()
+        data = res.json()
+    except Exception:
+        return None
+    if data.get("status") != "000" or not data.get("list"):
+        return None
+    tables: dict[str, list] = {"BS": [], "IS": [], "CIS": [], "CF": []}
+    for row in data["list"]:
+        sj = row.get("sj_div", "")
+        if sj not in tables:
+            continue
+        tables[sj].append({
+            "account_id": str(row.get("account_id") or ""),
+            "account_nm": str(row.get("account_nm") or "").strip(),
+            "thstrm":     _parse_won(row.get("thstrm_amount")),
+            "frmtrm":     _parse_won(row.get("frmtrm_amount")),
+            "bfefrmtrm":  _parse_won(row.get("bfefrmtrm_amount")),
+        })
+    return tables
+
+
+def _extract_sdb(tables, key):
+    """SDB 확장 지표 추출 (원 단위). key: thstrm / frmtrm / bfefrmtrm.
+    부호 규칙은 _fetch_summary와 동일: 순수 손실 계정만 음수 전환."""
+    def pure_loss(name):
+        return "손실" in name and "손익" not in name and "(손실)" not in name
+
+    def by_id(aid, secs):
+        for sj in secs:
+            for r in tables.get(sj, []):
+                if r["account_id"] == aid:
+                    return r[key]
+        return None
+
+    def by_name_sign(names, secs):
+        for name in names:
+            for sj in secs:
+                for r in tables.get(sj, []):
+                    if r["account_nm"] == name:
+                        v = r[key]
+                        if v is not None and pure_loss(name):
+                            return -v
+                        return v
+        return None
+
+    def metric(aid, names, secs):
+        v = by_id(aid, secs)
+        return v if v is not None else by_name_sign(names, secs)
+
+    def op_income():
+        for sj in ("IS", "CIS"):
+            for r in tables.get(sj, []):
+                if r["account_id"] == "dart_OperatingIncomeLoss":
+                    v = r[key]
+                    if v is not None and pure_loss(r["account_nm"]):
+                        return -v
+                    return v
+        return by_name_sign(["영업이익", "영업손익", "영업이익(손실)", "영업손실"], ("IS", "CIS"))
+
+    def borrowings():
+        total, found = 0, False
+        seen = set()
+        for r in tables.get("BS", []):
+            ident = (r["account_id"], r["account_nm"])
+            if ident in seen:
+                continue
+            if r["account_id"] in BORROW_IDS or r["account_nm"] in BORROW_NAMES:
+                seen.add(ident)
+                if r[key] is not None:
+                    total += r[key]
+                    found = True
+        return total if found else None
+
+    return {
+        "매출액":     metric("ifrs-full_Revenue",     ["매출액", "매출", "수익(매출액)", "영업수익"], ("IS", "CIS")),
+        "매출원가":   metric("ifrs-full_CostOfSales", ["매출원가"], ("IS", "CIS")),
+        "매출총이익": metric("ifrs-full_GrossProfit", ["매출총이익", "매출총이익(손실)", "매출총손실"], ("IS", "CIS")),
+        "영업이익":   op_income(),
+        "자산총계":   metric("ifrs-full_Assets",      ["자산총계"], ("BS",)),
+        "유동자산":   metric("ifrs-full_CurrentAssets",    ["유동자산"], ("BS",)),
+        "비유동자산": metric("ifrs-full_NoncurrentAssets", ["비유동자산"], ("BS",)),
+        "부채총계":   metric("ifrs-full_Liabilities", ["부채총계"], ("BS",)),
+        "유동부채":   metric("ifrs-full_CurrentLiabilities",    ["유동부채"], ("BS",)),
+        "비유동부채": metric("ifrs-full_NoncurrentLiabilities", ["비유동부채"], ("BS",)),
+        "자본총계":   metric("ifrs-full_Equity",      ["자본총계"], ("BS",)),
+        "차입금":     borrowings(),
+    }
+
+
+def _won_to_mil(d):
+    """원 단위 dict → 백만원 단위 (정수 반올림)."""
+    return {k: (round(v / 1e6) if v is not None else None) for k, v in d.items()}
+
+
+def _sub_won(a, b):
+    if a is not None and b is not None:
+        return a - b
+    return None
+
+
+@app.route("/api/sdb")
+def sdb():
+    corp_code = request.args.get("corp_code", "").strip()
+    corp_name = request.args.get("corp_name", "").strip()
+    fs_div    = request.args.get("fs_div", "CFS").strip()
+    if not corp_code:
+        return jsonify({"error": "corp_code 파라미터가 없습니다"}), 400
+    if fs_div not in VALID_FS_DIVS:
+        return jsonify({"error": f"fs_div 오류: {fs_div}"}), 400
+
+    current_year = datetime.now().year
+    base = current_year - 1  # 직전 연도 연간보고서에 3개년이 모두 들어있음
+
+    used_fs = fs_div
+    t_ann = _fetch_tables_raw(corp_code, str(base), "11011", used_fs)
+    if t_ann is None and used_fs == "CFS":
+        # 연결 없으면 별도로 재시도
+        used_fs = "OFS"
+        t_ann = _fetch_tables_raw(corp_code, str(base), "11011", used_fs)
+    if t_ann is None:
+        # 직전 연도 연간이 아직 공시 전이면 한 해 더 이전 보고서 사용
+        base -= 1
+        used_fs = fs_div
+        t_ann = _fetch_tables_raw(corp_code, str(base), "11011", used_fs)
+        if t_ann is None and used_fs == "CFS":
+            used_fs = "OFS"
+            t_ann = _fetch_tables_raw(corp_code, str(base), "11011", used_fs)
+    if t_ann is None:
+        return jsonify({"error": f"{corp_name}의 연간 재무제표를 찾을 수 없습니다."}), 400
+
+    years = {
+        str(base - 2): _won_to_mil(_extract_sdb(t_ann, "bfefrmtrm")),
+        str(base - 1): _won_to_mil(_extract_sdb(t_ann, "frmtrm")),
+        str(base):     _won_to_mil(_extract_sdb(t_ann, "thstrm")),
+    }
+
+    # ── 당해년도 분기: 1Q=11013, 2Q=반기-1Q, 3Q=11014(3개월), 4Q=연간-반기-3Q
+    qy = str(current_year)
+    t_q1 = _fetch_tables_raw(corp_code, qy, "11013", used_fs)
+    t_h1 = _fetch_tables_raw(corp_code, qy, "11012", used_fs)
+    t_q3 = _fetch_tables_raw(corp_code, qy, "11014", used_fs)
+    t_an = _fetch_tables_raw(corp_code, qy, "11011", used_fs)
+
+    e_q1 = _extract_sdb(t_q1, "thstrm") if t_q1 else None
+    e_h1 = _extract_sdb(t_h1, "thstrm") if t_h1 else None
+    e_q3 = _extract_sdb(t_q3, "thstrm") if t_q3 else None
+    e_an = _extract_sdb(t_an, "thstrm") if t_an else None
+
+    def flow(e, k):
+        return e.get(k) if e else None
+
+    quarters = {}
+    for k in ("매출액", "영업이익"):
+        q1v = flow(e_q1, k)
+        q2v = _sub_won(flow(e_h1, k), q1v)
+        q3v = flow(e_q3, k)  # 분기보고서 thstrm은 3개월 실적
+        q4v = None
+        if flow(e_an, k) is not None and flow(e_h1, k) is not None and q3v is not None:
+            q4v = flow(e_an, k) - flow(e_h1, k) - q3v
+        quarters[k] = {
+            "1Q": round(q1v / 1e6) if q1v is not None else None,
+            "2Q": round(q2v / 1e6) if q2v is not None else None,
+            "3Q": round(q3v / 1e6) if q3v is not None else None,
+            "4Q": round(q4v / 1e6) if q4v is not None else None,
+        }
+
+    return jsonify({
+        "corp_name": corp_name,
+        "fs_label": "연결기준" if used_fs == "CFS" else "별도기준",
+        "years": years,
+        "quarter_year": current_year,
+        "quarters": quarters,
+        "overseas": False,
+    })
+
+
+@app.route("/api/sdb_overseas")
+def sdb_overseas():
+    ticker_sym = request.args.get("ticker", "").strip().upper()
+    corp_name  = request.args.get("corp_name", ticker_sym).strip()
+    if not ticker_sym:
+        return jsonify({"error": "ticker 파라미터가 없습니다"}), 400
+
+    try:
+        import yfinance as yf
+        t = yf.Ticker(ticker_sym)
+        fin = t.financials
+        bs  = t.balance_sheet
+        if fin is None or fin.empty:
+            return jsonify({"error": f"{ticker_sym} 연간 재무 데이터가 없습니다."}), 400
+
+        rate = get_usd_krw()
+
+        def conv(v):
+            # USD → KRW 백만
+            if v is None or v != v:
+                return None
+            return round(float(v) * rate / 1e6)
+
+        def fin_val(df, col, keys):
+            if df is None or df.empty or col is None:
+                return None
+            for k in keys:
+                if k in df.index:
+                    v = df.loc[k, col]
+                    if v is not None and v == v:
+                        return float(v)
+            return None
+
+        def bs_col_for(year):
+            if bs is None or bs.empty:
+                return None
+            cands = [c for c in bs.columns if c.year == year]
+            return cands[0] if cands else None
+
+        fin_cols = sorted(fin.columns, reverse=True)[:3]
+        years = {}
+        for col in fin_cols:
+            bcol = bs_col_for(col.year)
+            years[str(col.year)] = {
+                "매출액":     conv(fin_val(fin, col, ["Total Revenue", "Revenue"])),
+                "매출원가":   conv(fin_val(fin, col, ["Cost Of Revenue"])),
+                "매출총이익": conv(fin_val(fin, col, ["Gross Profit"])),
+                "영업이익":   conv(fin_val(fin, col, ["Operating Income", "EBIT"])),
+                "자산총계":   conv(fin_val(bs, bcol, ["Total Assets"])),
+                "유동자산":   conv(fin_val(bs, bcol, ["Current Assets"])),
+                "비유동자산": conv(fin_val(bs, bcol, ["Total Non Current Assets"])),
+                "부채총계":   conv(fin_val(bs, bcol, ["Total Liabilities Net Minority Interest", "Total Liabilities"])),
+                "유동부채":   conv(fin_val(bs, bcol, ["Current Liabilities"])),
+                "비유동부채": conv(fin_val(bs, bcol, ["Total Non Current Liabilities Net Minority Interest"])),
+                "자본총계":   conv(fin_val(bs, bcol, ["Stockholders Equity", "Total Equity Gross Minority Interest"])),
+                "차입금":     conv(fin_val(bs, bcol, ["Total Debt"])),
+            }
+
+        # 당해년도 분기 (달력 분기 기준 근사)
+        current_year = datetime.now().year
+        qfin = t.quarterly_financials
+        quarters = {"매출액": {}, "영업이익": {}}
+        if qfin is not None and not qfin.empty:
+            for col in qfin.columns:
+                if col.year != current_year:
+                    continue
+                qn = f"{(col.month - 1) // 3 + 1}Q"
+                quarters["매출액"][qn]   = conv(fin_val(qfin, col, ["Total Revenue", "Revenue"]))
+                quarters["영업이익"][qn] = conv(fin_val(qfin, col, ["Operating Income", "EBIT"]))
+        for k in quarters:
+            for qn in ("1Q", "2Q", "3Q", "4Q"):
+                quarters[k].setdefault(qn, None)
+
+        try:
+            info = t.info
+            corp_name = info.get("shortName") or info.get("longName") or ticker_sym
+        except Exception:
+            pass
+
+        return jsonify({
+            "corp_name": corp_name,
+            "ticker": ticker_sym,
+            "fs_label": "연결기준",
+            "years": years,
+            "quarter_year": current_year,
+            "quarters": quarters,
+            "exchange_rate": round(rate, 1),
+            "overseas": True,
+        })
+    except Exception as e:
+        log.error("SDB 해외 조회 오류 (%s): %s", ticker_sym, e)
+        return jsonify({"error": f"데이터 조회 실패: {e}"}), 500
 
 
 # ── 해외 재무 헬퍼 ─────────────────────────────────────────

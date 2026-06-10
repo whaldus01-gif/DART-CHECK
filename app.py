@@ -4,6 +4,8 @@ from pathlib import Path
 import requests
 import zipfile
 import io
+import gzip
+import csv
 import xml.etree.ElementTree as ET
 import os
 import sys
@@ -51,62 +53,83 @@ else:
 _corp_list: list[dict] = []
 _corp_index: dict[str, dict] = {}
 _corp_lock = threading.Lock()
-
-
-def load_corp_list() -> list[dict]:
-    global _corp_list, _corp_index
-    if _corp_list:
-        return _corp_list
-    with _corp_lock:
-        if _corp_list:  # 락 대기 중 다른 스레드가 이미 로드한 경우
-            return _corp_list
-        log.info("기업 목록 다운로드 중...")
-        try:
-            res = requests.get("https://opendart.fss.or.kr/api/corpCode.xml",
-                               params={"crtfc_key": API_KEY}, timeout=120)
-            res.raise_for_status()
-        except requests.RequestException as e:
-            raise RuntimeError(f"기업 목록 다운로드 실패: {e}")
-        new_list: list[dict] = []
-        new_index: dict[str, dict] = {}
-        try:
-            with zipfile.ZipFile(io.BytesIO(res.content)) as z:
-                with z.open("CORPCODE.xml") as f:
-                    # iterparse + clear: 전체 트리를 메모리에 들고 있지 않음 (Render 512MB 대응)
-                    for _, elem in ET.iterparse(f):
-                        if elem.tag == "list":
-                            corp = {
-                                "corp_code":  elem.findtext("corp_code") or "",
-                                "corp_name":  elem.findtext("corp_name") or "",
-                                "stock_code": (elem.findtext("stock_code") or "").strip(),
-                            }
-                            if corp["corp_code"] and corp["corp_name"]:
-                                new_list.append(corp)
-                                new_index[corp["corp_code"]] = corp
-                            elem.clear()
-        except (zipfile.BadZipFile, KeyError, ET.ParseError) as e:
-            raise RuntimeError(f"기업 목록 파일 파싱 실패: {e}")
-        _corp_index = new_index
-        _corp_list = new_list
-        log.info("기업 목록 로드 완료: %d개", len(_corp_list))
-    return _corp_list
-
-
 _corp_load_error: str | None = None
 
+CORP_FILE = Path(__file__).parent / "corp_list.csv.gz"
+
+
+def _set_corp_data(new_list: list[dict], new_index: dict[str, dict], source: str):
+    global _corp_list, _corp_index
+    _corp_index = new_index
+    _corp_list = new_list
+    log.info("기업 목록 로드 완료 (%s): %d개", source, len(new_list))
+
+
+def _load_corp_from_file() -> bool:
+    """레포에 내장된 corp_list.csv.gz에서 즉시 로드 (네트워크 불필요)."""
+    if not CORP_FILE.exists():
+        return False
+    new_list: list[dict] = []
+    new_index: dict[str, dict] = {}
+    with gzip.open(CORP_FILE, "rt", encoding="utf-8") as f:
+        for row in csv.reader(f):
+            if len(row) >= 2 and row[0] and row[1]:
+                corp = {"corp_code": row[0], "corp_name": row[1],
+                        "stock_code": row[2].strip() if len(row) > 2 else ""}
+                new_list.append(corp)
+                new_index[corp["corp_code"]] = corp
+    if not new_list:
+        return False
+    _set_corp_data(new_list, new_index, "내장 파일")
+    return True
+
+
+def _refresh_from_dart():
+    """DART에서 최신 기업 목록 다운로드 후 교체. 실패 시 예외 (기존 데이터 유지)."""
+    log.info("DART 기업 목록 다운로드 중...")
+    res = requests.get("https://opendart.fss.or.kr/api/corpCode.xml",
+                       params={"crtfc_key": API_KEY}, timeout=120)
+    res.raise_for_status()
+    new_list: list[dict] = []
+    new_index: dict[str, dict] = {}
+    with zipfile.ZipFile(io.BytesIO(res.content)) as z:
+        with z.open("CORPCODE.xml") as f:
+            # iterparse + clear: 전체 트리를 메모리에 들고 있지 않음 (Render 512MB 대응)
+            for _, elem in ET.iterparse(f):
+                if elem.tag == "list":
+                    corp = {
+                        "corp_code":  elem.findtext("corp_code") or "",
+                        "corp_name":  elem.findtext("corp_name") or "",
+                        "stock_code": (elem.findtext("stock_code") or "").strip(),
+                    }
+                    if corp["corp_code"] and corp["corp_name"]:
+                        new_list.append(corp)
+                        new_index[corp["corp_code"]] = corp
+                    elem.clear()
+    if len(new_list) < 1000:
+        raise RuntimeError(f"다운로드 데이터 이상 ({len(new_list)}개)")
+    _set_corp_data(new_list, new_index, "DART 갱신")
+
+
 def _preload_corp_list():
-    """성공할 때까지 백그라운드에서 재시도 (최대 30회, 20초 간격)."""
+    """1) 내장 파일에서 즉시 로드 → 2) DART 최신본으로 백그라운드 갱신 시도."""
     global _corp_load_error
-    for attempt in range(1, 31):
+    with _corp_lock:
         try:
-            load_corp_list()
+            _load_corp_from_file()
+        except Exception as e:
+            log.error("내장 기업 목록 로드 실패: %s", e)
+    for attempt in range(1, 4):
+        try:
+            with _corp_lock:
+                _refresh_from_dart()
             _corp_load_error = None
             return
         except Exception as e:
-            _corp_load_error = str(e)
-            log.error("기업 목록 로드 실패 (시도 %d/30): %s", attempt, e)
+            if not _corp_list:
+                _corp_load_error = str(e)
+            log.warning("DART 목록 갱신 실패 (%d/3, 내장본 사용 중): %s", attempt, e)
             time.sleep(20)
-    log.error("기업 목록 로드 최종 실패")
 
 threading.Thread(target=_preload_corp_list, daemon=True).start()
 

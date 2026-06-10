@@ -243,12 +243,17 @@ def financial():
             val = find_by_name(name_variants, sections)
         return val
 
+    def is_pure_loss_account(name: str) -> bool:
+        # "영업손실", "당기순손실" 같은 순수 손실 계정만 True
+        # "영업이익(손실)", "영업손익" 같은 표준 IFRS 복합명은 False
+        return "손실" in name and "손익" not in name and "(손실)" not in name
+
     def find_op_income() -> float | None:
         for sj in ("IS", "CIS"):
             for r in tables.get(sj, []):
                 if r["account_id"] == "dart_OperatingIncomeLoss":
                     v = r["thstrm_amount"]
-                    if v is not None and "손실" in r["account_nm"] and "손익" not in r["account_nm"]:
+                    if v is not None and is_pure_loss_account(r["account_nm"]):
                         return -v
                     return v
         return find_by_name(["영업이익", "영업손익", "영업이익(손실)", "영업손실"], ("IS", "CIS"))
@@ -262,7 +267,7 @@ def financial():
             for r in tables.get(sj, []):
                 if r["account_id"] in target_ids:
                     v = r["thstrm_amount"]
-                    if v is not None and "손실" in r["account_nm"] and "손익" not in r["account_nm"]:
+                    if v is not None and is_pure_loss_account(r["account_nm"]):
                         return -v
                     return v
         return find_by_name(["당기순이익", "분기순이익", "당기순손익", "당기순이익(손실)"], ("IS", "CIS"))

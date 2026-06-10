@@ -55,7 +55,34 @@
     }
     .header-text h1   { font-size: 15px; font-weight: 700; color: var(--text); }
     .header-text p    { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
-    .header-divider   { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+    /* ── 탭 ──────────────────────────────────────── */
+    .mode-tabs {
+      display: flex;
+      gap: 0;
+      background: #f1f5f9;
+      border-radius: 9px;
+      padding: 3px;
+      margin-bottom: 16px;
+      width: fit-content;
+    }
+    .mode-tab {
+      padding: 7px 18px;
+      border: none;
+      background: transparent;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-tab.active {
+      background: white;
+      color: var(--blue-dark);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
 
     /* ── 컨테이너 ─────────────────────────────── */
     .container { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
@@ -92,7 +119,7 @@
 
     /* 검색 입력 */
     .search-wrap { position: relative; flex: 1; min-width: 220px; }
-    #searchInput {
+    .search-input {
       width: 100%;
       padding: 9px 12px;
       border: 1px solid var(--border);
@@ -104,15 +131,15 @@
       color: var(--text);
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    #searchInput:focus {
+    .search-input:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
       background: white;
     }
-    #searchInput::placeholder { color: #cbd5e1; }
+    .search-input::placeholder { color: #cbd5e1; }
 
     /* 드롭다운 */
-    #dropdown {
+    .dropdown {
       display: none;
       position: absolute;
       top: calc(100% + 6px);
@@ -141,7 +168,7 @@
     .drop-item .listed { color: var(--blue-dark); background: var(--blue-bg); }
 
     /* 입력 공통 */
-    select, #yearInput {
+    select, .year-input {
       padding: 9px 12px;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -161,15 +188,15 @@
       background-position: right 10px center;
       padding-right: 28px;
     }
-    select:focus, #yearInput:focus {
+    select:focus, .year-input:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 3px rgba(14,165,233,0.12);
       background: white;
     }
-    #yearInput { width: 90px; }
+    .year-input { width: 90px; }
 
     /* 버튼 */
-    #addBtn {
+    .add-btn {
       padding: 9px 20px;
       background: var(--blue);
       color: white;
@@ -182,11 +209,11 @@
       transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
       white-space: nowrap;
     }
-    #addBtn:hover { background: var(--blue-dark); box-shadow: 0 2px 8px rgba(14,165,233,0.35); }
-    #addBtn:active { transform: scale(0.98); }
-    #addBtn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+    .add-btn:hover { background: var(--blue-dark); box-shadow: 0 2px 8px rgba(14,165,233,0.35); }
+    .add-btn:active { transform: scale(0.98); }
+    .add-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
-    #allQBtn {
+    .allq-btn {
       padding: 9px 16px;
       background: white;
       color: var(--blue);
@@ -199,10 +226,11 @@
       white-space: nowrap;
       transition: all 0.15s;
     }
-    #allQBtn:hover { background: var(--blue-bg); border-color: var(--blue); }
+    .allq-btn:hover { background: var(--blue-bg); border-color: var(--blue); }
+    .allq-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* 선택 배지 */
-    #selectedBadge {
+    .selected-badge {
       display: none;
       background: var(--blue-bg);
       color: var(--blue-dark);
@@ -215,7 +243,7 @@
     }
 
     /* 로딩 */
-    #inlineLoading {
+    .inline-loading {
       display: none;
       align-self: center;
       font-size: 13px;
@@ -279,7 +307,7 @@
       margin-left: 6px;
     }
 
-    .btn-group { display: flex; gap: 8px; }
+    .btn-group { display: flex; gap: 8px; align-items: center; }
 
     .btn-excel {
       display: flex; align-items: center; gap: 6px;
@@ -309,6 +337,23 @@
       transition: all 0.15s;
     }
     .btn-clear:hover { border-color: #fca5a5; color: #dc2626; background: #fff5f5; }
+
+    /* 통화 토글 */
+    .btn-currency {
+      padding: 7px 14px;
+      background: white;
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-currency:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+    .btn-currency.usd-mode { border-color: #f59e0b; color: #b45309; background: #fffbeb; }
 
     /* ── 토스트 ──────────────────────────────── */
     #toast {
@@ -412,6 +457,27 @@
     .badge-q3  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
     .badge-ann { background: var(--blue-bg); color: var(--blue-dark); border: 1px solid var(--blue-mid); }
 
+    /* 해외 배지 */
+    .overseas-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      background: #fdf4ff;
+      color: #9333ea;
+      border: 1px solid #e9d5ff;
+      margin-left: 4px;
+    }
+
+    /* 환율 안내 */
+    .fx-note {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-left: 8px;
+      font-weight: 400;
+    }
+
     /* ── 서버 상태 ───────────────────────────── */
     #serverStatus {
       position: fixed; top: 12px; right: 14px;
@@ -431,18 +497,18 @@
       .search-row { flex-direction: column; gap: 12px; }
       .field { width: 100%; }
       .search-wrap { min-width: unset; }
-      #searchInput { font-size: 16px; }
+      .search-input { font-size: 16px; }
       .quarter-group { gap: 6px; }
       .q-btn { flex: 1; text-align: center; font-size: 12px; }
-      select, #yearInput { font-size: 16px; width: 100%; }
-      #yearInput { width: 100%; }
-      #addBtn  { width: 100%; padding: 12px; font-size: 15px; }
-      #allQBtn { width: 100%; padding: 10px; }
-      #selectedBadge { width: 100%; text-align: center; }
+      select, .year-input { font-size: 16px; width: 100%; }
+      .year-input { width: 100%; }
+      .add-btn  { width: 100%; padding: 12px; font-size: 15px; }
+      .allq-btn { width: 100%; padding: 10px; }
+      .selected-badge { width: 100%; text-align: center; }
 
       .result-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .btn-group { width: 100%; }
-      .btn-excel, .btn-clear { flex: 1; justify-content: center; }
+      .btn-group { width: 100%; flex-wrap: wrap; }
+      .btn-excel, .btn-clear, .btn-currency { flex: 1; justify-content: center; }
 
       #resultTable thead { display: none; }
       #resultTable tbody tr {
@@ -487,53 +553,98 @@
   <div class="header-logo">🏦</div>
   <div class="header-text">
     <h1>DART 재무제표 조회</h1>
-    <p>금융감독원 전자공시시스템 Open API</p>
+    <p>국내 (DART Open API) · 해외 (Yahoo Finance)</p>
   </div>
 </header>
 
 <div class="container">
 
-  <div class="section-label">기업 검색</div>
+  <!-- 국내/해외 탭 -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode('domestic')">🇰🇷 국내</button>
+    <button class="mode-tab" onclick="switchMode('overseas')">🌐 해외</button>
+  </div>
 
-  <div class="search-card">
-    <div class="search-row">
+  <!-- ── 국내 검색 카드 ── -->
+  <div id="domesticCard">
+    <div class="section-label">국내 기업 검색</div>
+    <div class="search-card">
+      <div class="search-row">
 
-      <div class="field" style="flex:1; min-width:200px;">
-        <label>회사명</label>
-        <div class="search-wrap">
-          <input id="searchInput" type="text" placeholder="삼성전자, SK하이닉스..." autocomplete="off" />
-          <div id="dropdown"></div>
+        <div class="field" style="flex:1; min-width:200px;">
+          <label>회사명</label>
+          <div class="search-wrap">
+            <input id="searchInput" class="search-input" type="text" placeholder="삼성전자, SK하이닉스..." autocomplete="off" />
+            <div id="dropdown" class="dropdown"></div>
+          </div>
         </div>
-      </div>
 
-      <div id="selectedBadge"></div>
+        <div id="selectedBadge" class="selected-badge"></div>
 
-      <div class="field">
-        <label>연도</label>
-        <input id="yearInput" type="number" value="2025" min="2010" max="2026" />
-      </div>
-
-      <div class="field">
-        <label>분기</label>
-        <div class="quarter-group">
-          <button class="q-btn" data-code="11013" onclick="selectQ(this)">Q1</button>
-          <button class="q-btn" data-code="Q2" onclick="selectQ(this)">Q2</button>
-          <button class="q-btn" data-code="11014" onclick="selectQ(this)">Q3</button>
-          <button class="q-btn active" data-code="11011" onclick="selectQ(this)">연간</button>
+        <div class="field">
+          <label>연도</label>
+          <input id="yearInput" class="year-input" type="number" value="2025" min="2010" max="2026" />
         </div>
-      </div>
 
-      <div class="field">
-        <label>재무제표</label>
-        <select id="fsSelect">
-          <option value="CFS">연결</option>
-          <option value="OFS">별도</option>
-        </select>
-      </div>
+        <div class="field">
+          <label>분기</label>
+          <div class="quarter-group" id="domesticQuarters">
+            <button class="q-btn" data-code="11013" onclick="selectQ(this)">Q1</button>
+            <button class="q-btn" data-code="Q2" onclick="selectQ(this)">Q2</button>
+            <button class="q-btn" data-code="11014" onclick="selectQ(this)">Q3</button>
+            <button class="q-btn active" data-code="11011" onclick="selectQ(this)">연간</button>
+          </div>
+        </div>
 
-      <button id="addBtn" onclick="addRow()">조회</button>
-      <button id="allQBtn" onclick="addAllQuarters()">전체분기</button>
-      <div id="inlineLoading"><span class="dot-spin"></span> 조회 중...</div>
+        <div class="field">
+          <label>재무제표</label>
+          <select id="fsSelect">
+            <option value="CFS">연결</option>
+            <option value="OFS">별도</option>
+          </select>
+        </div>
+
+        <button id="addBtn" class="add-btn" onclick="addDomesticRow()">조회</button>
+        <button id="allQBtn" class="allq-btn" onclick="addAllQuarters()">전체분기</button>
+        <div id="inlineLoading" class="inline-loading"><span class="dot-spin"></span> 조회 중...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 해외 검색 카드 ── -->
+  <div id="overseasCard" style="display:none;">
+    <div class="section-label">해외 기업 검색</div>
+    <div class="search-card">
+      <div class="search-row">
+
+        <div class="field" style="flex:1; min-width:200px;">
+          <label>기업명 / 티커</label>
+          <div class="search-wrap">
+            <input id="overseasInput" class="search-input" type="text" placeholder="Apple, AAPL, Tesla, TSMC..." autocomplete="off" />
+            <div id="overseasDropdown" class="dropdown"></div>
+          </div>
+        </div>
+
+        <div id="overseasBadge" class="selected-badge"></div>
+
+        <div class="field">
+          <label>연도</label>
+          <input id="overseasYear" class="year-input" type="number" value="2024" min="2010" max="2026" />
+        </div>
+
+        <div class="field">
+          <label>기간</label>
+          <div class="quarter-group">
+            <button class="q-btn" data-code="Q1" onclick="selectOQ(this)">Q1</button>
+            <button class="q-btn" data-code="Q2" onclick="selectOQ(this)">Q2</button>
+            <button class="q-btn" data-code="Q3" onclick="selectOQ(this)">Q3</button>
+            <button class="q-btn active" data-code="annual" onclick="selectOQ(this)">연간</button>
+          </div>
+        </div>
+
+        <button id="overseasAddBtn" class="add-btn" onclick="addOverseasRow()">조회</button>
+        <div id="overseasLoading" class="inline-loading"><span class="dot-spin"></span> 조회 중...</div>
+      </div>
     </div>
   </div>
 
@@ -541,8 +652,11 @@
 
   <div id="resultArea">
     <div class="result-header">
-      <h2>조회 결과 <span class="result-count" id="resultCount"></span></h2>
+      <h2>조회 결과 <span class="result-count" id="resultCount"></span>
+        <span id="fxNote" class="fx-note" style="display:none;"></span>
+      </h2>
       <div class="btn-group">
+        <button id="currencyBtn" class="btn-currency" onclick="toggleCurrency()" style="display:none;">억$ 보기</button>
         <button class="btn-excel" onclick="copyToExcel()">📋 Excel 복사</button>
         <button class="btn-clear" onclick="clearAll()">전체 삭제</button>
       </div>
@@ -554,11 +668,11 @@
           <tr>
             <th>기업명</th>
             <th>연도</th>
-            <th>매출액 (억원)</th>
-            <th>영업이익 (억원)</th>
+            <th id="th-rev">매출액 (억원)</th>
+            <th id="th-op">영업이익 (억원)</th>
             <th>영업이익률</th>
-            <th>자본총계 (억원)</th>
-            <th>자산총계 (억원)</th>
+            <th id="th-eq">자본총계 (억원)</th>
+            <th id="th-ast">자산총계 (억원)</th>
             <th></th>
           </tr>
         </thead>
@@ -574,69 +688,154 @@
 <div id="toast">✅ 클립보드에 복사됐습니다. Excel에서 Ctrl+V 하세요!</div>
 
 <script>
+  // ── 상태 ─────────────────────────────────────
+  let currentMode = 'domestic'; // 'domestic' | 'overseas'
   let selectedCorp = null;
+  let selectedOverseas = null;
   let debounceTimer = null;
+  let overseasDebounce = null;
   let rows = [];
+  let showUsd = false;   // 억$ 모드
 
   const QUARTER_MAP = {
-    '11013': { label: 'Q1',      badge: 'badge-q1'  },
-    'Q2':    { label: 'Q2',      badge: 'badge-q2'  },
-    '11014': { label: 'Q3',      badge: 'badge-q3'  },
-    '11011': { label: '연간',    badge: 'badge-ann' },
+    '11013': { label: 'Q1',   badge: 'badge-q1'  },
+    'Q2':    { label: 'Q2',   badge: 'badge-q2'  },
+    '11014': { label: 'Q3',   badge: 'badge-q3'  },
+    '11011': { label: '연간', badge: 'badge-ann' },
+  };
+  const OVERSEAS_PERIOD_MAP = {
+    'Q1':     { label: 'Q1',   badge: 'badge-q1'  },
+    'Q2':     { label: 'Q2',   badge: 'badge-q2'  },
+    'Q3':     { label: 'Q3',   badge: 'badge-q3'  },
+    'annual': { label: '연간', badge: 'badge-ann' },
   };
 
+  // ── 모드 전환 ─────────────────────────────────
+  function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach((t, i) => {
+      t.classList.toggle('active', (mode === 'domestic') === (i === 0));
+    });
+    document.getElementById('domesticCard').style.display = mode === 'domestic' ? '' : 'none';
+    document.getElementById('overseasCard').style.display = mode === 'overseas' ? '' : 'none';
+    hideError();
+  }
+
+  // ── 국내 분기 선택 ────────────────────────────
   function getActiveQ() {
-    return document.querySelector('.q-btn.active')?.dataset.code || '11011';
+    return document.querySelector('#domesticQuarters .q-btn.active')?.dataset.code || '11011';
   }
   function selectQ(btn) {
-    document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#domesticQuarters .q-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
 
+  // ── 해외 기간 선택 ────────────────────────────
+  function getActiveOQ() {
+    return document.querySelector('#overseasCard .q-btn.active')?.dataset.code || 'annual';
+  }
+  function selectOQ(btn) {
+    document.querySelectorAll('#overseasCard .q-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── 국내 검색 ─────────────────────────────────
   document.getElementById('searchInput').addEventListener('input', function () {
     clearTimeout(debounceTimer);
     selectedCorp = null;
     document.getElementById('selectedBadge').style.display = 'none';
     const q = this.value.trim();
-    if (!q) { closeDropdown(); return; }
-    debounceTimer = setTimeout(() => fetchSearch(q), 150);
+    if (!q) { closeDropdown('dropdown'); return; }
+    debounceTimer = setTimeout(() => fetchDomesticSearch(q), 150);
   });
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.search-wrap')) closeDropdown();
-  });
-
-  async function fetchSearch(q) {
+  async function fetchDomesticSearch(q) {
     const res  = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
     const list = await res.json();
-    renderDropdown(list);
+    renderDropdown('dropdown', list, selectCorp);
   }
 
-  function renderDropdown(list) {
-    const dd = document.getElementById('dropdown');
+  function renderDropdown(ddId, list, onSelect) {
+    const dd = document.getElementById(ddId);
     if (!list.length) { dd.style.display = 'none'; return; }
-    dd.innerHTML = list.map(c => `
-      <div class="drop-item" onclick='selectCorp(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
-        <span class="name">${c.corp_name}</span>
-        <span class="code ${c.stock_code?.trim() ? 'listed' : ''}">${c.stock_code?.trim() || '비상장'}</span>
-      </div>`).join('');
+    dd.innerHTML = list.map(c => {
+      const code = c.stock_code || c.exchange || '';
+      const isListed = !!(c.stock_code?.trim());
+      const displayCode = isListed ? c.stock_code.trim() : (c.exchange || c.ticker || '');
+      return `<div class="drop-item" tabindex="0" onclick='(${onSelect.name})(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+        <span class="name">${c.corp_name || c.name}</span>
+        <span class="code ${isListed ? 'listed' : ''}">${displayCode || '해외'}</span>
+      </div>`;
+    }).join('');
     dd.style.display = 'block';
   }
 
-  function closeDropdown() { document.getElementById('dropdown').style.display = 'none'; }
+  function closeDropdown(id) { document.getElementById(id).style.display = 'none'; }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) {
+      closeDropdown('dropdown');
+      closeDropdown('overseasDropdown');
+    }
+  });
 
   function selectCorp(corp) {
     selectedCorp = corp;
     document.getElementById('searchInput').value = corp.corp_name;
-    closeDropdown();
+    closeDropdown('dropdown');
     const badge = document.getElementById('selectedBadge');
     badge.textContent = corp.stock_code?.trim() ? `${corp.corp_name} (${corp.stock_code.trim()})` : corp.corp_name;
     badge.style.display = 'inline-block';
   }
 
-  async function addRow() {
+  // ── 해외 검색 ─────────────────────────────────
+  document.getElementById('overseasInput').addEventListener('input', function () {
+    clearTimeout(overseasDebounce);
+    selectedOverseas = null;
+    document.getElementById('overseasBadge').style.display = 'none';
+    const q = this.value.trim();
+    if (!q) { closeDropdown('overseasDropdown'); return; }
+    overseasDebounce = setTimeout(() => fetchOverseasSearch(q), 250);
+  });
+
+  async function fetchOverseasSearch(q) {
+    try {
+      const res  = await fetch(`/api/search_overseas?q=${encodeURIComponent(q)}`);
+      const list = await res.json();
+      if (list.error) return;
+      const mapped = list.map(item => ({
+        ...item,
+        corp_name: item.name,
+        stock_code: '',
+      }));
+      renderOverseasDropdown(mapped);
+    } catch(e) {}
+  }
+
+  function renderOverseasDropdown(list) {
+    const dd = document.getElementById('overseasDropdown');
+    if (!list.length) { dd.style.display = 'none'; return; }
+    dd.innerHTML = list.map(c => `
+      <div class="drop-item" tabindex="0" onclick='selectOverseas(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+        <span class="name">${c.name}</span>
+        <span class="code">${c.ticker} · ${c.exchange}</span>
+      </div>`).join('');
+    dd.style.display = 'block';
+  }
+
+  function selectOverseas(item) {
+    selectedOverseas = item;
+    document.getElementById('overseasInput').value = item.name;
+    closeDropdown('overseasDropdown');
+    const badge = document.getElementById('overseasBadge');
+    badge.textContent = `${item.name} (${item.ticker})`;
+    badge.style.display = 'inline-block';
+  }
+
+  // ── 국내 조회 ─────────────────────────────────
+  async function addDomesticRow() {
     if (!selectedCorp) {
-      const first = document.querySelector('.drop-item');
+      const first = document.querySelector('#dropdown .drop-item');
       if (first) { first.click(); await new Promise(r => setTimeout(r, 50)); }
     }
     if (!selectedCorp) { showError('회사를 검색한 후 목록에서 선택해 주세요.'); return; }
@@ -644,34 +843,35 @@
     const report = getActiveQ();
     const fsDiv  = document.getElementById('fsSelect').value;
     hideError();
-    setLoading(true);
-    const ok = await fetchAndPush(selectedCorp, year, report, fsDiv);
+    setDomesticLoading(true);
+    const ok = await fetchDomesticAndPush(selectedCorp, year, report, fsDiv);
     if (ok) {
       document.getElementById('searchInput').value = '';
       document.getElementById('selectedBadge').style.display = 'none';
       selectedCorp = null;
     }
-    setLoading(false);
+    setDomesticLoading(false);
   }
 
   async function addAllQuarters() {
     if (!selectedCorp) { alert('회사를 먼저 선택하세요.'); return; }
     const year  = document.getElementById('yearInput').value;
     const fsDiv = document.getElementById('fsSelect').value;
-    hideError(); setLoading(true);
-    for (const code of ['11013', '11012', '11014', '11011']) {
-      await fetchAndPush(selectedCorp, year, code, fsDiv, true);
+    hideError(); setDomesticLoading(true);
+    for (const code of ['11013', 'Q2', '11014', '11011']) {
+      await fetchDomesticAndPush(selectedCorp, year, code, fsDiv, true);
     }
     document.getElementById('searchInput').value = '';
     document.getElementById('selectedBadge').style.display = 'none';
     selectedCorp = null;
-    setLoading(false);
+    setDomesticLoading(false);
   }
 
-  async function fetchAndPush(corp, year, reportCode, fsDiv, silent = false) {
+  async function fetchDomesticAndPush(corp, year, reportCode, fsDiv, silent = false) {
     const fsLabel = document.getElementById('fsSelect').selectedOptions[0].text;
     const qInfo   = QUARTER_MAP[reportCode];
     const dup = rows.find(r =>
+      r.type === 'domestic' &&
       r.corp_code === corp.corp_code && r.year === year &&
       r.report_code === reportCode   && r.fs_div === fsDiv
     );
@@ -691,6 +891,7 @@
       const margin = (s['매출액'] && s['매출액'] !== 0 && s['영업이익'] !== null && s['영업이익'] !== undefined)
         ? +(s['영업이익'] / s['매출액'] * 100).toFixed(1) : null;
       rows.push({
+        type: 'domestic',
         corp_code: corp.corp_code, corp_name: data.corp_name,
         year, report_code: reportCode,
         q_label: qInfo.label, q_badge: qInfo.badge,
@@ -706,9 +907,101 @@
     }
   }
 
+  // ── 해외 조회 ─────────────────────────────────
+  async function addOverseasRow() {
+    if (!selectedOverseas) {
+      const first = document.querySelector('#overseasDropdown .drop-item');
+      if (first) { first.click(); await new Promise(r => setTimeout(r, 50)); }
+    }
+    if (!selectedOverseas) { showError('기업을 검색한 후 목록에서 선택해 주세요.'); return; }
+    const year   = document.getElementById('overseasYear').value;
+    const period = getActiveOQ();
+    hideError();
+    setOverseasLoading(true);
+    const ok = await fetchOverseasAndPush(selectedOverseas, year, period);
+    if (ok) {
+      document.getElementById('overseasInput').value = '';
+      document.getElementById('overseasBadge').style.display = 'none';
+      selectedOverseas = null;
+    }
+    setOverseasLoading(false);
+  }
+
+  async function fetchOverseasAndPush(item, year, period, silent = false) {
+    const pInfo = OVERSEAS_PERIOD_MAP[period];
+    const dup = rows.find(r =>
+      r.type === 'overseas' && r.ticker === item.ticker &&
+      r.year === year && r.period === period
+    );
+    if (dup) {
+      if (!silent) showError(`${item.name} (${item.ticker}) ${year} ${pInfo.label}은 이미 추가됐습니다.`);
+      return false;
+    }
+    const params = new URLSearchParams({
+      ticker: item.ticker, year, period,
+    });
+    try {
+      const res  = await fetch(`/api/financial_overseas?${params}`);
+      const data = await res.json();
+      if (!res.ok) { if (!silent) showError(data.error || '조회 실패'); return false; }
+      const s  = data.summary;
+      const su = data.summary_usd;
+      const margin = (s['매출액'] && s['매출액'] !== 0 && s['영업이익'] !== null && s['영업이익'] !== undefined)
+        ? +(s['영업이익'] / s['매출액'] * 100).toFixed(1) : null;
+      rows.push({
+        type: 'overseas',
+        ticker: item.ticker, corp_name: data.corp_name,
+        year, period,
+        q_label: pInfo.label, q_badge: pInfo.badge,
+        exchange_rate: data.exchange_rate,
+        매출액: s['매출액'], 영업이익: s['영업이익'],
+        영업이익률: margin, 자본총계: s['자본총계'], 자산총계: s['자산총계'],
+        매출액_usd: su['매출액'], 영업이익_usd: su['영업이익'],
+        자본총계_usd: su['자본총계'], 자산총계_usd: su['자산총계'],
+      });
+      renderTable();
+      return true;
+    } catch(e) {
+      if (!silent) showError('서버 오류: ' + e.message);
+      return false;
+    }
+  }
+
+  // ── 통화 토글 ──────────────────────────────────
+  function toggleCurrency() {
+    showUsd = !showUsd;
+    const btn = document.getElementById('currencyBtn');
+    btn.textContent = showUsd ? '억원 보기' : '억$ 보기';
+    btn.classList.toggle('usd-mode', showUsd);
+    // 헤더 업데이트
+    const unit = showUsd ? '억$' : '억원';
+    document.getElementById('th-rev').textContent  = `매출액 (${unit})`;
+    document.getElementById('th-op').textContent   = `영업이익 (${unit})`;
+    document.getElementById('th-eq').textContent   = `자본총계 (${unit})`;
+    document.getElementById('th-ast').textContent  = `자산총계 (${unit})`;
+    renderTable();
+  }
+
+  // ── 테이블 렌더링 ──────────────────────────────
   function renderTable() {
     const area  = document.getElementById('resultArea');
     const tbody = document.getElementById('resultBody');
+
+    const hasOverseas = rows.some(r => r.type === 'overseas');
+    document.getElementById('currencyBtn').style.display = hasOverseas ? '' : 'none';
+
+    if (hasOverseas) {
+      const rates = rows.filter(r => r.exchange_rate).map(r => r.exchange_rate);
+      const rate  = rates.length ? rates[rates.length - 1] : null;
+      const fxNote = document.getElementById('fxNote');
+      if (rate) {
+        fxNote.style.display = '';
+        fxNote.textContent   = `(환율 ${rate.toLocaleString('ko-KR')} KRW/USD 기준)`;
+      }
+    } else {
+      document.getElementById('fxNote').style.display = 'none';
+    }
+
     if (!rows.length) {
       tbody.innerHTML = '<tr><td class="hint" colspan="8">기업을 검색해 조회하세요</td></tr>';
       area.style.display = 'none';
@@ -716,23 +1009,33 @@
     }
     area.style.display = 'block';
     document.getElementById('resultCount').textContent = `${rows.length}개`;
-    tbody.innerHTML = rows.map((r, i) => `
-      <tr>
-        <td>
-          ${r.corp_name}
-          <span style="font-size:11px;color:var(--text-sub);font-weight:400;margin-left:4px;">${r.fs_label}</span>
-        </td>
+
+    tbody.innerHTML = rows.map((r, i) => {
+      const isOverseaRow = r.type === 'overseas';
+      const useUsd = showUsd && isOverseaRow;
+      const rev  = useUsd ? r.매출액_usd   : r.매출액;
+      const op   = useUsd ? r.영업이익_usd : r.영업이익;
+      const eq   = useUsd ? r.자본총계_usd : r.자본총계;
+      const ast  = useUsd ? r.자산총계_usd : r.자산총계;
+
+      const nameCell = isOverseaRow
+        ? `${r.corp_name}<span class="overseas-badge">🌐 ${r.ticker}</span>`
+        : `${r.corp_name}<span style="font-size:11px;color:var(--text-sub);font-weight:400;margin-left:4px;">${r.fs_label || ''}</span>`;
+
+      return `<tr>
+        <td>${nameCell}</td>
         <td data-label="연도" style="text-align:center;">
           <span style="font-weight:600;">${r.year}</span>
           <span class="period-badge ${r.q_badge}">${r.q_label}</span>
         </td>
-        ${fmtTd(r.매출액,   '매출액(억원)')}
-        ${fmtTd(r.영업이익, '영업이익(억원)')}
+        ${fmtTd(rev,   '매출액')}
+        ${fmtTd(op,    '영업이익')}
         <td data-label="영업이익률" style="text-align:center;">${marginBadge(r.영업이익률)}</td>
-        ${fmtTd(r.자본총계, '자본총계(억원)')}
-        ${fmtTd(r.자산총계, '자산총계(억원)')}
+        ${fmtTd(eq,    '자본총계')}
+        ${fmtTd(ast,   '자산총계')}
         <td><button class="del-btn" onclick="deleteRow(${i})" title="삭제">✕</button></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }
 
   function fmtTd(v, label = '') {
@@ -759,9 +1062,12 @@
 
   function copyToExcel() {
     if (!rows.length) return;
-    const headers = ['기업명','재무제표','연도','분기','매출액(억원)','영업이익(억원)','영업이익률(%)','자본총계(억원)','자산총계(억원)'];
+    const headers = ['기업명','티커/재무제표','연도','기간','매출액(억원)','영업이익(억원)','영업이익률(%)','자본총계(억원)','자산총계(억원)'];
     const dataRows = rows.map(r => [
-      r.corp_name, r.fs_label, r.year, r.q_label,
+      r.corp_name,
+      r.type === 'overseas' ? r.ticker : (r.fs_label || ''),
+      r.year,
+      r.q_label,
       r.매출액 ?? '', r.영업이익 ?? '',
       r.영업이익률 !== null ? r.영업이익률 : '',
       r.자본총계 ?? '', r.자산총계 ?? '',
@@ -782,11 +1088,16 @@
     setTimeout(() => { t.style.display = 'none'; }, 3000);
   }
 
-  function setLoading(v) {
+  function setDomesticLoading(v) {
     document.getElementById('inlineLoading').style.display = v ? 'flex' : 'none';
     document.getElementById('addBtn').disabled  = v;
     document.getElementById('allQBtn').disabled = v;
   }
+  function setOverseasLoading(v) {
+    document.getElementById('overseasLoading').style.display = v ? 'flex' : 'none';
+    document.getElementById('overseasAddBtn').disabled = v;
+  }
+
   function showError(msg) {
     const el = document.getElementById('error');
     el.textContent = '⚠️ ' + msg;
@@ -794,17 +1105,27 @@
   }
   function hideError() { document.getElementById('error').style.display = 'none'; }
 
+  // ── 키보드 ─────────────────────────────────────
   document.getElementById('searchInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       if (!selectedCorp) {
-        const first = document.querySelector('.drop-item');
+        const first = document.querySelector('#dropdown .drop-item');
         if (first) { first.click(); return; }
       }
-      addRow();
+      addDomesticRow();
     }
     if (e.key === 'ArrowDown') {
-      const items = document.querySelectorAll('.drop-item');
+      const items = document.querySelectorAll('#dropdown .drop-item');
       if (items.length) { e.preventDefault(); items[0].focus(); }
+    }
+  });
+  document.getElementById('overseasInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (!selectedOverseas) {
+        const first = document.querySelector('#overseasDropdown .drop-item');
+        if (first) { first.click(); return; }
+      }
+      addOverseasRow();
     }
   });
 
@@ -819,6 +1140,7 @@
     }
   });
 
+  // ── 서버 상태 체크 ─────────────────────────────
   async function checkHealth() {
     const el = document.getElementById('serverStatus');
     try {

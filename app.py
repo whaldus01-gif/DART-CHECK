@@ -48,6 +48,16 @@ log.info("API 키 확인 완료")
 _corp_list: list[dict] = []
 _corp_index: dict[str, dict] = {}   # corp_code → corp 빠른 조회용
 
+import threading
+
+def _preload_corp_list():
+    try:
+        load_corp_list()
+    except Exception as e:
+        log.error("기업 목록 사전 로드 실패: %s", e)
+
+threading.Thread(target=_preload_corp_list, daemon=True).start()
+
 
 def load_corp_list() -> list[dict]:
     global _corp_list, _corp_index

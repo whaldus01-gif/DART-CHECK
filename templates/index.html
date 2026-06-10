@@ -609,7 +609,7 @@
     document.getElementById('selectedBadge').style.display = 'none';
     const q = this.value.trim();
     if (!q) { closeDropdown(); return; }
-    debounceTimer = setTimeout(() => fetchSearch(q), 250);
+    debounceTimer = setTimeout(() => fetchSearch(q), 150);
   });
 
   document.addEventListener('click', e => {

@@ -111,14 +111,20 @@ def _refresh_from_dart():
     _set_corp_data(new_list, new_index, "DART 갱신")
 
 
-def _preload_corp_list():
-    """1) 내장 파일에서 즉시 로드 → 2) DART 최신본으로 백그라운드 갱신 시도."""
+# 내장 파일은 임포트 시점에 동기 로드 (1~2초).
+# 스레드에 맡기면 gunicorn --preload 포크 시 워커에 스레드가 전달되지 않아 영영 0개가 됨.
+try:
+    if not _load_corp_from_file():
+        _corp_load_error = "내장 기업 목록 파일이 없거나 비어 있습니다"
+        log.error(_corp_load_error)
+except Exception as _e:
+    _corp_load_error = f"내장 기업 목록 로드 실패: {_e}"
+    log.error(_corp_load_error)
+
+
+def _refresh_corp_list_bg():
+    """DART 최신본으로 백그라운드 갱신 (실패해도 내장본으로 동작)."""
     global _corp_load_error
-    with _corp_lock:
-        try:
-            _load_corp_from_file()
-        except Exception as e:
-            log.error("내장 기업 목록 로드 실패: %s", e)
     for attempt in range(1, 4):
         try:
             with _corp_lock:
@@ -131,7 +137,7 @@ def _preload_corp_list():
             log.warning("DART 목록 갱신 실패 (%d/3, 내장본 사용 중): %s", attempt, e)
             time.sleep(20)
 
-threading.Thread(target=_preload_corp_list, daemon=True).start()
+threading.Thread(target=_refresh_corp_list_bg, daemon=True).start()
 
 
 def parse_amount(val) -> float | None:
@@ -648,7 +654,7 @@ def _yf_val(df, col, keys):
 
 
 # ── 라우트 ─────────────────────────────────────────────────
-APP_VERSION = "v6-bundled-corplist"
+APP_VERSION = "v7-sync-load"
 
 @app.route("/api/health")
 def health():
@@ -670,7 +676,14 @@ def search():
     if not keyword:
         return jsonify([])
     if not _corp_list:
-        # 다운로드는 백그라운드 스레드 전담 — 요청을 잡고 있으면 워커 타임아웃으로 죽음
+        # 안전망: 내장 파일 인라인 로드 (1~2초라 워커 타임아웃 위험 없음)
+        try:
+            with _corp_lock:
+                if not _corp_list:
+                    _load_corp_from_file()
+        except Exception as e:
+            log.error("검색 중 내장 목록 로드 실패: %s", e)
+    if not _corp_list:
         msg = "기업 목록을 불러오는 중입니다. 10초 후 다시 검색해 주세요."
         if _corp_load_error:
             msg += f" (마지막 오류: {_corp_load_error})"

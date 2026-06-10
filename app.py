@@ -140,7 +140,7 @@ def search():
         log.error("기업 목록 로드 오류: %s", e)
         return jsonify({"error": str(e)}), 500
 
-    results = [c for c in corps if keyword in c["corp_name"]]
+    results = [c for c in corps if keyword.lower() in c["corp_name"].lower()]
     results.sort(key=lambda x: x["stock_code"] == "")
     return jsonify(results[:30])
 

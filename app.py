@@ -49,35 +49,45 @@ else:
 
 _corp_list: list[dict] = []
 _corp_index: dict[str, dict] = {}
+_corp_lock = threading.Lock()
 
 
 def load_corp_list() -> list[dict]:
     global _corp_list, _corp_index
     if _corp_list:
         return _corp_list
-    log.info("기업 목록 다운로드 중...")
-    try:
-        res = requests.get("https://opendart.fss.or.kr/api/corpCode.xml",
-                           params={"crtfc_key": API_KEY}, timeout=30)
-        res.raise_for_status()
-    except requests.RequestException as e:
-        raise RuntimeError(f"기업 목록 다운로드 실패: {e}")
-    try:
-        with zipfile.ZipFile(io.BytesIO(res.content)) as z:
-            with z.open("CORPCODE.xml") as f:
-                tree = ET.parse(f)
-    except (zipfile.BadZipFile, KeyError) as e:
-        raise RuntimeError(f"기업 목록 파일 파싱 실패: {e}")
-    for item in tree.getroot().findall("list"):
-        corp = {
-            "corp_code":  item.findtext("corp_code") or "",
-            "corp_name":  item.findtext("corp_name") or "",
-            "stock_code": (item.findtext("stock_code") or "").strip(),
-        }
-        if corp["corp_code"] and corp["corp_name"]:
-            _corp_list.append(corp)
-            _corp_index[corp["corp_code"]] = corp
-    log.info("기업 목록 로드 완료: %d개", len(_corp_list))
+    with _corp_lock:
+        if _corp_list:  # 락 대기 중 다른 스레드가 이미 로드한 경우
+            return _corp_list
+        log.info("기업 목록 다운로드 중...")
+        try:
+            res = requests.get("https://opendart.fss.or.kr/api/corpCode.xml",
+                               params={"crtfc_key": API_KEY}, timeout=30)
+            res.raise_for_status()
+        except requests.RequestException as e:
+            raise RuntimeError(f"기업 목록 다운로드 실패: {e}")
+        new_list: list[dict] = []
+        new_index: dict[str, dict] = {}
+        try:
+            with zipfile.ZipFile(io.BytesIO(res.content)) as z:
+                with z.open("CORPCODE.xml") as f:
+                    # iterparse + clear: 전체 트리를 메모리에 들고 있지 않음 (Render 512MB 대응)
+                    for _, elem in ET.iterparse(f):
+                        if elem.tag == "list":
+                            corp = {
+                                "corp_code":  elem.findtext("corp_code") or "",
+                                "corp_name":  elem.findtext("corp_name") or "",
+                                "stock_code": (elem.findtext("stock_code") or "").strip(),
+                            }
+                            if corp["corp_code"] and corp["corp_name"]:
+                                new_list.append(corp)
+                                new_index[corp["corp_code"]] = corp
+                            elem.clear()
+        except (zipfile.BadZipFile, KeyError, ET.ParseError) as e:
+            raise RuntimeError(f"기업 목록 파일 파싱 실패: {e}")
+        _corp_index = new_index
+        _corp_list = new_list
+        log.info("기업 목록 로드 완료: %d개", len(_corp_list))
     return _corp_list
 
 
@@ -316,6 +326,9 @@ def search():
     keyword = request.args.get("q", "").strip()
     if not keyword:
         return jsonify([])
+    if not _corp_list and _corp_lock.locked():
+        # 시작 직후 목록 로딩 중 — 요청을 잡고 있지 말고 바로 안내
+        return jsonify({"error": "기업 목록을 불러오는 중입니다. 10초 후 다시 검색해 주세요."}), 503
     try:
         corps = load_corp_list()
     except RuntimeError as e:

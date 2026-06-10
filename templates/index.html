@@ -750,9 +750,19 @@
   });
 
   async function fetchDomesticSearch(q) {
-    const res  = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-    const list = await res.json();
-    renderDropdown('dropdown', list, selectCorp);
+    try {
+      const res  = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const list = await res.json();
+      if (!res.ok || list.error) {
+        showError(list.error || '검색 오류 (' + res.status + ')');
+        closeDropdown('dropdown');
+        return;
+      }
+      hideError();
+      renderDropdown('dropdown', list, selectCorp);
+    } catch(e) {
+      showError('검색 연결 오류: ' + e.message);
+    }
   }
 
   function renderDropdown(ddId, list, onSelect) {

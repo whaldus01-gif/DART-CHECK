@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DART 재무제표 조회</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: white;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    header .logo { font-size: 26px; }
+    header h1   { font-size: 19px; font-weight: 700; }
+    header p    { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+
+    .container { max-width: 1200px; margin: 28px auto; padding: 0 20px; }
+
+    /* 검색 카드 */
+    .search-card {
+      background: white;
+      border-radius: 14px;
+      padding: 24px 28px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+      margin-bottom: 20px;
+      overflow: visible;
+    }
+    .search-card h2 { font-size: 14px; font-weight: 600; color: #666; margin-bottom: 14px; }
+
+    .search-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; overflow: visible; }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .search-wrap { position: relative; flex: 1; min-width: 220px; }
+    #searchInput {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 9px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #searchInput:focus { border-color: #0f3460; }
+
+    #dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 5px);
+      left: 0; right: 0;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .drop-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f5f5f5;
+      transition: background 0.15s;
+    }
+    .drop-item:last-child { border-bottom: none; }
+    .drop-item:hover { background: #f0f4ff; }
+    .drop-item .name { font-size: 14px; font-weight: 500; }
+    .drop-item .code { font-size: 11px; color: #888; background: #f5f5f5; padding: 2px 8px; border-radius: 20px; }
+    .drop-item .listed { color: #0f3460; background: #e8eeff; }
+
+    select, #yearInput {
+      padding: 10px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 9px;
+      font-size: 13px;
+      outline: none;
+      background: white;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    select:focus, #yearInput:focus { border-color: #0f3460; }
+    #yearInput { width: 90px; }
+
+    #addBtn {
+      padding: 10px 22px;
+      background: linear-gradient(135deg, #0f3460, #1a6bb5);
+      color: white;
+      border: none;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    #addBtn:hover { opacity: 0.9; }
+    #addBtn:active { transform: scale(0.97); }
+    #addBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #selectedBadge {
+      display: none;
+      background: #e8eeff;
+      color: #0f3460;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      align-self: center;
+    }
+
+    /* 로딩 인라인 */
+    #inlineLoading {
+      display: none;
+      align-self: center;
+      font-size: 13px;
+      color: #888;
+    }
+    .dot-spin {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #ccc;
+      border-top-color: #0f3460;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 오류 */
+    #error {
+      display: none;
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      color: #c0392b;
+      padding: 12px 18px;
+      border-radius: 9px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    /* 결과 테이블 영역 */
+    #resultArea { display: none; }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .result-header h2 { font-size: 16px; font-weight: 700; }
+
+    .btn-group { display: flex; gap: 8px; }
+
+    .btn-excel {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      background: #217346;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-excel:hover { opacity: 0.88; }
+
+    .btn-clear {
+      padding: 9px 16px;
+      background: white;
+      color: #e74c3c;
+      border: 1.5px solid #e74c3c;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-clear:hover { background: #fff0f0; }
+
+    /* 복사 완료 토스트 */
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1a1a2e;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform: translateX(-50%) translateY(8px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+
+    /* 결과 테이블 */
+    .table-wrap {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      min-width: 700px;
+    }
+
+    thead tr { background: #1a1a2e; color: white; }
+    thead th {
+      padding: 13px 18px;
+      text-align: right;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    thead th:nth-child(1) { text-align: left; min-width: 130px; }
+    thead th:nth-child(2) { text-align: center; min-width: 70px; }
+
+    tbody tr {
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafbff; }
+
+    tbody td {
+      padding: 13px 18px;
+      text-align: right;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    tbody td:nth-child(1) { text-align: left; font-weight: 600; }
+    tbody td:nth-child(2) { text-align: center; color: #888; font-size: 13px; }
+
+    .neg   { color: #e74c3c; }
+    .pos   { color: #1a7a4a; }
+    .null  { color: #ccc; }
+
+    .margin-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .margin-good { background: #e6f4ee; color: #1a7a4a; }
+    .margin-mid  { background: #fff8e1; color: #b07d00; }
+    .margin-bad  { background: #fff0f0; color: #e74c3c; }
+    .margin-null { background: #f5f5f5; color: #aaa; }
+
+    .del-btn {
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+    .del-btn:hover { color: #e74c3c; }
+
+    .hint {
+      text-align: center;
+      color: #bbb;
+      font-size: 13px;
+      padding: 40px;
+    }
+
+    /* 분기 버튼 그룹 */
+    .quarter-group {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .q-btn {
+      padding: 7px 13px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .q-btn:hover  { border-color: #0f3460; color: #0f3460; }
+    .q-btn.active { border-color: #0f3460; background: #0f3460; color: white; }
+
+    #allQBtn {
+      padding: 10px 16px;
+      background: #f0f4ff;
+      color: #0f3460;
+      border: 2px dashed #b0c4f0;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    #allQBtn:hover { background: #e0eaff; }
+
+    /* 기간 배지 */
+    .period-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 5px;
+    }
+    .badge-q1  { background: #fff3e0; color: #e65100; }
+    .badge-q2  { background: #e8f5e9; color: #2e7d32; }
+    .badge-q3  { background: #e3f2fd; color: #1565c0; }
+    .badge-ann { background: #ede7f6; color: #4527a0; }
+
+    /* 서버 상태 배지 */
+    #serverStatus {
+      position: fixed;
+      top: 12px; right: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      z-index: 200;
+      opacity: 0.85;
+    }
+    #serverStatus.ok   { background: #d4edda; color: #155724; }
+    #serverStatus.err  { background: #f8d7da; color: #721c24; }
+    #serverStatus.chk  { background: #fff3cd; color: #856404; }
+  </style>
+</head>
+<body>
+
+<div id="serverStatus" class="chk">확인 중...</div>
+
+<header>
+  <div class="logo">📊</div>
+  <div>
+    <h1>DART 재무제표 조회</h1>
+    <p>금융감독원 전자공시시스템 Open API</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 검색 카드 -->
+  <div class="search-card">
+    <h2>기업 추가</h2>
+    <div class="search-row">
+
+      <div class="field" style="flex:1; min-width:200px;">
+        <label>회사명</label>
+        <div class="search-wrap">
+          <input id="searchInput" type="text" placeholder="예) 삼성전자, LG디스플레이..." autocomplete="off" />
+          <div id="dropdown"></div>
+        </div>
+      </div>
+
+      <div id="selectedBadge"></div>
+
+      <div class="field">
+        <label>연도</label>
+        <input id="yearInput" type="number" value="2025" min="2010" max="2026" />
+      </div>
+
+      <div class="field">
+        <label>분기 선택</label>
+        <div class="quarter-group">
+          <button class="q-btn" data-code="11013" onclick="selectQ(this)">Q1</button>
+          <button class="q-btn" data-code="11012" onclick="selectQ(this)">Q2 (반기)</button>
+          <button class="q-btn" data-code="11014" onclick="selectQ(this)">Q3</button>
+          <button class="q-btn active" data-code="11011" onclick="selectQ(this)">연간</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>재무제표</label>
+        <select id="fsSelect">
+          <option value="CFS">연결</option>
+          <option value="OFS">별도</option>
+        </select>
+      </div>
+
+      <button id="addBtn" onclick="addRow()">조회</button>
+      <button id="allQBtn" onclick="addAllQuarters()" title="선택 연도의 Q1~연간 전체 추가">전체분기 추가</button>
+      <div id="inlineLoading"><span class="dot-spin"></span>조회 중...</div>
+    </div>
+  </div>
+
+  <!-- 오류 -->
+  <div id="error"></div>
+
+  <!-- 결과 -->
+  <div id="resultArea">
+    <div class="result-header">
+      <h2 id="resultTitle">조회 결과</h2>
+      <div class="btn-group">
+        <button class="btn-excel" onclick="copyToExcel()">
+          <span>📋</span> Excel 복사
+        </button>
+        <button class="btn-clear" onclick="clearAll()">전체 삭제</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>기업명</th>
+            <th>연도</th>
+            <th>매출액 (억원)</th>
+            <th>영업이익 (억원)</th>
+            <th>영업이익률 (%)</th>
+            <th>자본총계 (억원)</th>
+            <th>자산총계 (억원)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="resultBody">
+          <tr><td class="hint" colspan="8">위에서 기업을 검색해 추가하세요</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- 토스트 -->
+<div id="toast">✅ 클립보드에 복사됐습니다. Excel에서 붙여넣기(Ctrl+V) 하세요!</div>
+
+<script>
+  let selectedCorp = null;
+  let debounceTimer = null;
+  let rows = [];
+
+  const QUARTER_MAP = {
+    '11013': { label: 'Q1',      badge: 'badge-q1'  },
+    '11012': { label: 'Q2(반기)', badge: 'badge-q2'  },
+    '11014': { label: 'Q3',      badge: 'badge-q3'  },
+    '11011': { label: '연간',    badge: 'badge-ann' },
+  };
+
+  function getActiveQ() {
+    return document.querySelector('.q-btn.active')?.dataset.code || '11011';
+  }
+
+  function selectQ(btn) {
+    document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── 검색 자동완성 ──────────────────────────────────
+  document.getElementById('searchInput').addEventListener('input', function () {
+    clearTimeout(debounceTimer);
+    selectedCorp = null;
+    document.getElementById('selectedBadge').style.display = 'none';
+    const q = this.value.trim();
+    if (!q) { closeDropdown(); return; }
+    debounceTimer = setTimeout(() => fetchSearch(q), 250);
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) closeDropdown();
+  });
+
+  async function fetchSearch(q) {
+    const res  = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const list = await res.json();
+    renderDropdown(list);
+  }
+
+  function renderDropdown(list) {
+    const dd = document.getElementById('dropdown');
+    if (!list.length) { dd.style.display = 'none'; return; }
+    dd.innerHTML = list.map(c => `
+      <div class="drop-item" onclick='selectCorp(${JSON.stringify(c).replace(/'/g, "&#39;")})'>
+        <span class="name">${c.corp_name}</span>
+        <span class="code ${c.stock_code?.trim() ? 'listed' : ''}">${c.stock_code?.trim() || '비상장'}</span>
+      </div>`).join('');
+    dd.style.display = 'block';
+  }
+
+  function closeDropdown() {
+    document.getElementById('dropdown').style.display = 'none';
+  }
+
+  function selectCorp(corp) {
+    selectedCorp = corp;
+    document.getElementById('searchInput').value = corp.corp_name;
+    closeDropdown();
+    const badge = document.getElementById('selectedBadge');
+    badge.textContent = corp.stock_code?.trim() ? `${corp.corp_name} (${corp.stock_code.trim()})` : corp.corp_name;
+    badge.style.display = 'inline-block';
+  }
+
+  // ── 행 추가 ────────────────────────────────────────
+  async function addRow() {
+    // 선택 안 됐으면 드롭다운 첫 번째 항목 자동 선택
+    if (!selectedCorp) {
+      const first = document.querySelector('.drop-item');
+      if (first) { first.click(); await new Promise(r => setTimeout(r, 50)); }
+    }
+    if (!selectedCorp) { showError('회사를 검색한 후 목록에서 선택해 주세요.'); return; }
+    const year   = document.getElementById('yearInput').value;
+    const report = getActiveQ();
+    const fsDiv  = document.getElementById('fsSelect').value;
+    hideError();
+    setLoading(true);
+    const ok = await fetchAndPush(selectedCorp, year, report, fsDiv);
+    if (ok) {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('selectedBadge').style.display = 'none';
+      selectedCorp = null;
+    }
+    setLoading(false);
+  }
+
+  async function addAllQuarters() {
+    if (!selectedCorp) { alert('회사를 먼저 선택하세요.'); return; }
+    const year  = document.getElementById('yearInput').value;
+    const fsDiv = document.getElementById('fsSelect').value;
+    hideError();
+    setLoading(true);
+    for (const code of ['11013', '11012', '11014', '11011']) {
+      await fetchAndPush(selectedCorp, year, code, fsDiv, true);
+    }
+    document.getElementById('searchInput').value = '';
+    document.getElementById('selectedBadge').style.display = 'none';
+    selectedCorp = null;
+    setLoading(false);
+  }
+
+  async function fetchAndPush(corp, year, reportCode, fsDiv, silent = false) {
+    const fsLabel = document.getElementById('fsSelect').selectedOptions[0].text;
+    const qInfo   = QUARTER_MAP[reportCode];
+
+    const dup = rows.find(r =>
+      r.corp_code === corp.corp_code && r.year === year &&
+      r.report_code === reportCode   && r.fs_div === fsDiv
+    );
+    if (dup) {
+      if (!silent) showError(`${corp.corp_name} ${year} ${qInfo.label}(${fsLabel})은 이미 추가됐습니다.`);
+      return false;
+    }
+
+    const params = new URLSearchParams({
+      corp_code: corp.corp_code, corp_name: corp.corp_name,
+      year, report_code: reportCode, fs_div: fsDiv,
+    });
+
+    try {
+      const res  = await fetch(`/api/financial?${params}`);
+      const data = await res.json();
+      if (!res.ok) {
+        if (!silent) showError(data.error || '조회 실패');
+        return false;
+      }
+
+      const s = data.summary;
+      const margin = (s['매출액'] && s['영업이익'] !== null)
+        ? +(s['영업이익'] / s['매출액'] * 100).toFixed(1) : null;
+
+      rows.push({
+        corp_code: corp.corp_code,
+        corp_name: data.corp_name,
+        year,
+        report_code: reportCode,
+        q_label:  qInfo.label,
+        q_badge:  qInfo.badge,
+        fs_div:   fsDiv,
+        fs_label: fsLabel,
+        매출액:    s['매출액'],
+        영업이익:  s['영업이익'],
+        영업이익률: margin,
+        자본총계:  s['자본총계'],
+        자산총계:  s['자산총계'],
+      });
+      renderTable();
+      return true;
+    } catch(e) {
+      if (!silent) showError('서버 오류: ' + e.message);
+      return false;
+    }
+  }
+
+  // ── 테이블 렌더 ────────────────────────────────────
+  function renderTable() {
+    const area  = document.getElementById('resultArea');
+    const tbody = document.getElementById('resultBody');
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td class="hint" colspan="8">위에서 기업을 검색해 추가하세요</td></tr>';
+      area.style.display = 'none';
+      return;
+    }
+
+    area.style.display = 'block';
+    document.getElementById('resultTitle').textContent = `조회 결과 (${rows.length}개 기업)`;
+
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td>${r.corp_name}<span style="font-size:11px;color:#aaa;font-weight:400;margin-left:4px;">${r.fs_label}</span></td>
+        <td style="text-align:center">
+          ${r.year}
+          <span class="period-badge ${r.q_badge}">${r.q_label}</span>
+        </td>
+        ${fmtTd(r.매출액)}
+        ${fmtTd(r.영업이익)}
+        <td style="text-align:center">${marginBadge(r.영업이익률)}</td>
+        ${fmtTd(r.자본총계)}
+        ${fmtTd(r.자산총계)}
+        <td><button class="del-btn" onclick="deleteRow(${i})" title="삭제">✕</button></td>
+      </tr>`).join('');
+  }
+
+  function fmtTd(v) {
+    if (v === null || v === undefined) return '<td class="null">—</td>';
+    const neg = v < 0;
+    const fmt = Math.abs(v).toLocaleString('ko-KR');
+    return `<td class="${neg ? 'neg' : 'pos'}">${neg ? '▼ ' : ''}${fmt}</td>`;
+  }
+
+  function marginBadge(v) {
+    if (v === null || v === undefined) return '<span class="margin-badge margin-null">—</span>';
+    const cls = v < 0 ? 'margin-bad' : v < 5 ? 'margin-mid' : 'margin-good';
+    return `<span class="margin-badge ${cls}">${v > 0 ? '+' : ''}${v}%</span>`;
+  }
+
+  function deleteRow(i) {
+    rows.splice(i, 1);
+    renderTable();
+  }
+
+  function clearAll() {
+    if (!rows.length) return;
+    if (!confirm('전체 삭제하시겠습니까?')) return;
+    rows = [];
+    renderTable();
+  }
+
+  // ── Excel 복사 ─────────────────────────────────────
+  function copyToExcel() {
+    if (!rows.length) return;
+
+    const headers = ['기업명', '재무제표', '연도', '분기', '매출액(억원)', '영업이익(억원)', '영업이익률(%)', '자본총계(억원)', '자산총계(억원)'];
+    const dataRows = rows.map(r => [
+      r.corp_name,
+      r.fs_label,
+      r.year,
+      r.q_label,
+      fmtNum(r.매출액),
+      fmtNum(r.영업이익),
+      r.영업이익률 !== null ? r.영업이익률 : '',
+      fmtNum(r.자본총계),
+      fmtNum(r.자산총계),
+    ]);
+
+    const tsv = [headers, ...dataRows].map(row => row.join('\t')).join('\n');
+
+    navigator.clipboard.writeText(tsv).then(() => {
+      showToast();
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = tsv;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast();
+    });
+  }
+
+  function fmtNum(v) {
+    if (v === null || v === undefined) return '';
+    return v;
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+
+  // ── 유틸 ──────────────────────────────────────────
+  function setLoading(v) {
+    document.getElementById('inlineLoading').style.display = v ? 'flex' : 'none';
+    document.getElementById('addBtn').disabled    = v;
+    document.getElementById('allQBtn').disabled   = v;
+  }
+  function showError(msg) {
+    const el = document.getElementById('error');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+  }
+  function hideError() {
+    document.getElementById('error').style.display = 'none';
+  }
+
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (!selectedCorp) {
+        const first = document.querySelector('.drop-item');
+        if (first) { first.click(); return; }
+      }
+      addRow();
+    }
+    if (e.key === 'ArrowDown') {
+      const items = document.querySelectorAll('.drop-item');
+      if (items.length) { e.preventDefault(); items[0].focus(); }
+    }
+  });
+
+  // ── 연도 입력 검증 ─────────────────────────────────
+  document.getElementById('yearInput').addEventListener('change', function () {
+    const v = parseInt(this.value, 10);
+    if (isNaN(v) || v < 2000 || v > 2030) {
+      this.style.borderColor = '#e74c3c';
+      showError(`연도는 2000~2030 사이여야 합니다.`);
+    } else {
+      this.style.borderColor = '';
+      hideError();
+    }
+  });
+
+  // ── 서버 헬스체크 (페이지 로드 시) ────────────────
+  async function checkHealth() {
+    const el = document.getElementById('serverStatus');
+    try {
+      const res  = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        el.className = 'ok';
+        el.textContent = '● 서버 정상';
+        setTimeout(() => { el.style.display = 'none'; }, 4000);
+      } else {
+        el.className = 'err';
+        el.textContent = '● 서버 오류';
+      }
+    } catch (e) {
+      el.className = 'err';
+      el.textContent = '● 서버 연결 안됨';
+    }
+  }
+  checkHealth();
+</script>
+</body>
+</html>
